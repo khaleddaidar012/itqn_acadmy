@@ -24,14 +24,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true)
     try {
       const stored = localStorage.getItem('daidar-theme') as Theme | null
-      if (stored === 'dark' || stored === 'light') {
-        setThemeState(stored)
-        applyTheme(stored)
+      if (stored === 'dark') {
+        setThemeState('dark')
+        applyTheme('dark')
       } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        const initial: Theme = prefersDark ? 'dark' : 'light'
-        setThemeState(initial)
-        applyTheme(initial)
+        setThemeState('light')
+        applyTheme('light')
       }
     } catch {
       // ignore localStorage errors
