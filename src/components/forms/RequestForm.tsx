@@ -9,7 +9,7 @@ import clsx from 'clsx'
 
 interface RequestFormProps {
   locale: Locale
-  preSelectedService: string
+  preSelectedService?: string
 }
 
 interface FormData {
@@ -59,10 +59,16 @@ export function RequestForm({ locale, preSelectedService }: RequestFormProps) {
   const [status, setStatus] = useState<FormStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
 
-  // Update service when URL param changes
+  // Read service from URL param or props on mount
   useEffect(() => {
     if (preSelectedService) {
       setFormData((prev) => ({ ...prev, service: preSelectedService }))
+    } else if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const serviceParam = params.get('service')
+      if (serviceParam && (serviceIds as readonly string[]).includes(serviceParam)) {
+        setFormData((prev) => ({ ...prev, service: serviceParam }))
+      }
     }
   }, [preSelectedService])
 

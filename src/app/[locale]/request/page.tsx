@@ -5,7 +5,6 @@ import { RequestForm } from '@/components/forms/RequestForm'
 
 type Props = {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ service?: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -20,12 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function RequestPage({ params, searchParams }: Props) {
+export default async function RequestPage({ params }: Props) {
   const { locale: rawLocale } = await params
   const locale = (rawLocale === 'en' ? 'en' : 'ar') as Locale
-  const { service } = await searchParams
   const t = getTranslations(locale)
-  const preSelectedService = service || ''
 
   return (
     <div className="pt-24 pb-20">
@@ -44,7 +41,7 @@ export default async function RequestPage({ params, searchParams }: Props) {
             </p>
           </div>
 
-          <RequestForm locale={locale} preSelectedService={preSelectedService} />
+          <RequestForm locale={locale} />
         </div>
       </div>
     </div>
