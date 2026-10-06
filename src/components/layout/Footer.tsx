@@ -127,7 +127,7 @@ export function Footer({ locale }: FooterProps) {
                 <span>khaledhesham012@gmail.com</span>
               </a>
               <a
-                href="https://www.facebook.com/daidarsolutions/"
+                href="https://www.facebook.com/daidarsoluations/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 text-[#94b4d4] hover:text-[#38bdf8] transition-colors duration-200 text-sm group"
