@@ -49,11 +49,11 @@ export function Footer({ locale }: FooterProps) {
             {/* Social Media Badges */}
             <div className="flex items-center gap-2.5 pt-2">
               <a
-                href="https://www.facebook.com/daidarsolution/"
+                href="https://www.facebook.com/daidarsoluations/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#94b4d4] hover:text-white hover:bg-[#1877F2] hover:border-[#1877F2] transition-all duration-200"
-                aria-label="Facebook: daidarsolutions"
+                aria-label="Facebook: daidarsoluations"
                 title="Facebook"
               >
                 <Facebook size={17} />
@@ -133,7 +133,7 @@ export function Footer({ locale }: FooterProps) {
                 className="flex items-center gap-3 text-[#94b4d4] hover:text-[#38bdf8] transition-colors duration-200 text-sm group"
               >
                 <Facebook size={16} className="text-[#1877F2] flex-shrink-0" />
-                <span>Facebook / daidarsolutions</span>
+                <span>Facebook / daidarsoluations</span>
               </a>
               <a
                 href="https://www.instagram.com/daidarsolutions"

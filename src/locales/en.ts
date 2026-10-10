@@ -127,6 +127,7 @@ const en = {
     whatsapp: 'Chat with Us on WhatsApp',
   },
   request: {
+    backToHome: 'Back to Home',
     pageTitle: 'Request a Service',
     pageSubtitle: 'Tell us about your project and we\'ll get back to you as soon as possible',
     name: 'Full Name',

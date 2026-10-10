@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ArrowRight,
   RefreshCw,
+  RotateCcw,
 } from 'lucide-react'
 import { getTranslations } from '@/locales'
 import type { Locale } from '@/types'
@@ -69,11 +70,29 @@ function ServiceCard({
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight
   const t = getTranslations(locale)
 
+  const handleMouseEnter = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      setIsFlipped(true)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      setIsFlipped(false)
+    }
+  }
+
   return (
     <div
-      className="flip-card group h-[400px] w-full"
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
+      className={clsx(
+        'flip-card group h-[400px] w-full cursor-pointer',
+        isFlipped && 'is-flipped'
+      )}
+      onClick={() => {
+        if (!isFlipped) setIsFlipped(true)
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onFocus={() => setIsFlipped(true)}
       onBlur={() => setIsFlipped(false)}
     >
@@ -114,7 +133,7 @@ function ServiceCard({
               <RefreshCw size={13} className="animate-spin-slow" />
               {t.services.flipHint}
             </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f1f5f9] dark:bg-[#1a2d48] text-[#64748b] dark:text-[#94a3b8]">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#0284c7]/10 dark:bg-[#38bdf8]/15 text-[#0284c7] dark:text-[#38bdf8] font-semibold">
               {locale === 'ar' ? 'تفاصيل' : 'Details'}
             </span>
           </div>
@@ -125,12 +144,30 @@ function ServiceCard({
           className="flip-card-back rounded-2xl p-6 flex flex-col justify-between
                      bg-white dark:bg-[#0f1d33]
                      border-2 border-[#0284c7]/25 dark:border-[#38bdf8]/50
-                     shadow-[0_4px_20px_rgba(2,132,199,0.12)]"
+                     shadow-[0_4px_20px_rgba(2,132,199,0.12)] cursor-default"
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
         >
           <div className="overflow-hidden flex-1 flex flex-col">
-            <h3 className="text-base font-bold text-[#122840] dark:text-[#e8f0fb] mb-1.5">
-              {service.whyTitle}
-            </h3>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <h3 className="text-base font-bold text-[#122840] dark:text-[#e8f0fb]">
+                {service.whyTitle}
+              </h3>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsFlipped(false)
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium text-[#0284c7] dark:text-[#38bdf8] bg-[#0284c7]/10 dark:bg-[#38bdf8]/15 hover:bg-[#0284c7]/20 active:scale-95 px-2.5 py-1 rounded-full transition-all flex-shrink-0"
+                aria-label={locale === 'ar' ? 'العودة' : 'Back'}
+              >
+                <RotateCcw size={12} />
+                <span>{locale === 'ar' ? 'عودة' : 'Back'}</span>
+              </button>
+            </div>
+
             <p className="text-xs text-[#475a72] dark:text-[#94b4d4] mb-3 leading-relaxed line-clamp-2">
               {service.whyDesc}
             </p>
@@ -152,35 +189,33 @@ function ServiceCard({
             </ul>
           </div>
 
-          {/* Action Link */}
-          <Link
-            href={`/${locale}/request?service=${service.id}`}
-            className="mt-4 btn-primary text-xs py-2.5 px-4 justify-center w-full"
-            tabIndex={isFlipped ? 0 : -1}
-            id={`service-flip-cta-${service.id}`}
-          >
-            {t.services.requestService}
-            <ArrowIcon size={14} />
-          </Link>
+          {/* Action Link & Back Button */}
+          <div className="mt-4 flex items-center gap-2">
+            <Link
+              href={`/${locale}/request?service=${service.id}`}
+              className="btn-primary text-xs py-2.5 px-4 justify-center flex-1 shadow-xs"
+              tabIndex={isFlipped ? 0 : -1}
+              id={`service-flip-cta-${service.id}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {t.services.requestService}
+              <ArrowIcon size={14} />
+            </Link>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsFlipped(false)
+              }}
+              className="py-2.5 px-3 rounded-xl border border-[#cbd5e1] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#132038] text-[#64748b] dark:text-[#94a3b8] hover:text-[#0284c7] dark:hover:text-[#38bdf8] hover:border-[#0284c7]/40 text-xs font-medium transition-colors flex items-center justify-center shrink-0 active:scale-95"
+              aria-label={locale === 'ar' ? 'العودة' : 'Back'}
+              title={locale === 'ar' ? 'العودة' : 'Back'}
+            >
+              <RotateCcw size={15} />
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Mobile Tap Button (Toggle Flip on Mobile) */}
-      <button
-        type="button"
-        className="md:hidden absolute bottom-3 left-4 right-4 py-1.5 rounded-lg text-xs font-medium text-center
-                   bg-white/90 dark:bg-[#0b1628]/90 text-[#0284c7] dark:text-[#38bdf8] border border-[#0284c7]/30 dark:border-[#38bdf8]/30 backdrop-blur-xs
-                   shadow-xs z-10"
-        onClick={(e) => {
-          e.stopPropagation()
-          setIsFlipped(!isFlipped)
-        }}
-        aria-label={isFlipped ? (locale === 'ar' ? 'إغلاق' : 'Close') : t.services.flipHint}
-      >
-        {isFlipped
-          ? (locale === 'ar' ? '← العودة' : 'Back →')
-          : t.services.flipHint}
-      </button>
     </div>
   )
 }
