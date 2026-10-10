@@ -27,7 +27,7 @@ export function AboutSection({ locale }: AboutSectionProps) {
 
           {/* Visual Side */}
           <div className={`relative ${isRTL ? 'lg:order-2' : 'lg:order-1'}`}>
-            <div className="bg-white dark:bg-[#132038] rounded-2xl border border-[#e2e8f0] dark:border-[#1e3456] shadow-[0_4px_24px_rgba(15,39,68,0.07)] p-8 space-y-6">
+            <div className="bg-white dark:bg-[#132038] rounded-2xl border border-[#e2e8f0] dark:border-[#1e3456] shadow-[0_4px_24px_rgba(15,39,68,0.07)] p-5 sm:p-8 space-y-6">
               {/* Founder row */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#38bdf8] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">

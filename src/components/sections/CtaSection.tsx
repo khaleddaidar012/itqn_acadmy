@@ -19,7 +19,7 @@ export function CtaSection({ locale }: CtaSectionProps) {
       aria-labelledby="cta-heading"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-2xl bg-[#0f2744] text-white p-12 lg:p-16 text-center">
+        <div className="relative overflow-hidden rounded-2xl bg-[#0f2744] text-white p-6 sm:p-12 lg:p-16 text-center">
           {/* Subtle accent */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#38bdf8]/40 to-transparent" />

@@ -227,7 +227,7 @@ export function ServicesSection({ locale }: ServicesSectionProps) {
   return (
     <section
       id="services"
-      className="section-padding bg-[#f8fafc] dark:bg-[#0b1628]"
+      className="section-padding bg-[#f8fafc] dark:bg-[#0b1628] overflow-hidden"
       aria-labelledby="services-heading"
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

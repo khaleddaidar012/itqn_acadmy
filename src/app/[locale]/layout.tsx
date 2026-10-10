@@ -38,12 +38,14 @@ export default async function LocaleLayout({ children, params }: Props) {
   const locale = (rawLocale === 'en' ? 'en' : 'ar') as Locale
 
   return (
-    <>
+    <div className="relative min-h-screen flex flex-col w-full max-w-full overflow-x-hidden">
       <LocaleAttributes locale={locale} />
       <Navbar locale={locale} />
-      <main id="main-content">{children}</main>
+      <main id="main-content" className="flex-1 w-full max-w-full overflow-x-hidden">
+        {children}
+      </main>
       <Footer locale={locale} />
       <WhatsAppButton locale={locale} />
-    </>
+    </div>
   )
 }

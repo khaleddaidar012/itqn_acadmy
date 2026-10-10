@@ -1,7 +1,13 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Cairo, Inter } from 'next/font/google'
 import '../styles/globals.css'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+}
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],

@@ -58,9 +58,13 @@ export function Navbar({ locale }: NavbarProps) {
           ? 'shadow-[0_4px_20px_rgba(18,40,64,0.07)]'
           : 'shadow-[0_1px_6px_rgba(18,40,64,0.03)]'
       )}
+      style={{
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
     >
       <nav
-        className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
+        className="container mx-auto px-6 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
         aria-label="Main navigation"
       >
         {/* Logo */}
