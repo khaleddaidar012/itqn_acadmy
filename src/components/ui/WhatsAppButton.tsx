@@ -1,6 +1,7 @@
 'use client'
 
 import { getTranslations } from '@/locales'
+import { ACADEMY_CONTACT } from '@/data/pricing'
 import type { Locale } from '@/types'
 
 interface WhatsAppButtonProps {
@@ -12,15 +13,15 @@ export function WhatsAppButton({ locale }: WhatsAppButtonProps) {
 
   return (
     <a
-      href="https://wa.me/201061532875"
+      href={`https://wa.me/${ACADEMY_CONTACT.whatsappRaw}`}
       target="_blank"
       rel="noopener noreferrer"
       id="whatsapp-float-btn"
       aria-label={t.whatsapp.tooltip}
-      className="whatsapp-btn-small"
+      className="fixed bottom-6 end-6 z-40 w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_6px_24px_rgba(16,185,129,0.4)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.55)] flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white/60"
       title={t.whatsapp.tooltip}
     >
-      <WhatsAppIcon className="w-5 h-5" />
+      <WhatsAppIcon className="w-7 h-7 sm:w-8 sm:h-8" />
     </a>
   )
 }

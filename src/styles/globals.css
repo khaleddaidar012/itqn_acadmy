@@ -3,49 +3,49 @@
 @tailwind utilities;
 
 /* ============================================
-   CSS Custom Properties / Design Tokens
+   ITQAN Quran Academy — Design Tokens
    ============================================ */
 :root {
-  --brand-50:  #f0f4f9;
-  --brand-100: #e2eaf4;
-  --brand-200: #c9d8ea;
-  --brand-300: #a2bedd;
-  --brand-400: #6ea0cc;
-  --brand-500: #3b82f6;
-  --brand-600: #2563eb;
-  --brand-700: #1d4ed8;
-  --brand-800: #1e40af;
-  --brand-900: #1e3a8a;
+  --brand-50:  #f0f7f5;
+  --brand-100: #dbeeec;
+  --brand-200: #badfd9;
+  --brand-300: #8dc8be;
+  --brand-400: #5ba99d;
+  --brand-500: #348a7e;
+  --brand-600: #075B4A; /* Deep Islamic Green */
+  --brand-700: #064c3e;
+  --brand-800: #053d32;
+  --brand-900: #043229;
 
-  /* Sky blue accent - calmed down for light mode readability */
-  --sky-400: #0284c7;
-  --sky-500: #0369a1;
+  --gold-300:  #dec796;
+  --gold-400:  #d3b174;
+  --gold-500:  #C6A66B; /* Elegant Gold */
+  --gold-600:  #b08e50;
 
-  /* Calmer light mode: soft muted off-white, no glare */
-  --bg-primary:    #f1f4f8;
+  --bg-primary:    #FAF8F2; /* Warm Cream */
   --bg-surface:    #ffffff;
-  --bg-muted:      #e6ebf1;
-  --text-primary:  #122840;
-  --text-secondary:#475a72;
-  --text-muted:    #74879d;
-  --border-light:  #dde3eb;
+  --bg-muted:      #f3efe5;
+  --text-primary:  #26332F; /* Deep Charcoal */
+  --text-secondary:#4d5f59;
+  --text-muted:    #7b8e88;
+  --border-light:  #e7dfd1;
 
   --radius-card: 16px;
-  --shadow-card:       0 2px 10px rgba(18, 40, 64, 0.04);
-  --shadow-card-hover: 0 6px 20px rgba(18, 40, 64, 0.08);
-  --shadow-btn:        0 2px 10px rgba(2, 132, 199, 0.2);
+  --shadow-card:       0 2px 14px rgba(7, 91, 74, 0.05);
+  --shadow-card-hover: 0 10px 30px rgba(7, 91, 74, 0.12);
+  --shadow-btn:        0 4px 16px rgba(7, 91, 74, 0.25);
 }
 
 .dark {
-  --bg-primary:    #0b1628;
-  --bg-surface:    #132038;
-  --bg-muted:      #1a2d48;
-  --text-primary:  #e8f0fb;
-  --text-secondary:#94b4d4;
-  --text-muted:    #5a7a9a;
-  --border-light:  #1e3456;
-  --shadow-card:       0 2px 12px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 8px 30px rgba(59, 150, 244, 0.2);
+  --bg-primary:    #0a1614;
+  --bg-surface:    #122421;
+  --bg-muted:      #1a312d;
+  --text-primary:  #f2f7f5;
+  --text-secondary:#b2c8c2;
+  --text-muted:    #7d9891;
+  --border-light:  #1d3833;
+  --shadow-card:       0 2px 16px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 10px 32px rgba(7, 91, 74, 0.3);
 }
 
 /* ============================================
@@ -100,261 +100,34 @@ main {
   }
 }
 
-/* ============================================
-   Selection
-   ============================================ */
-::selection {
-  background-color: rgba(56, 189, 248, 0.2);
-  color: inherit;
+/* Subtle Islamic Geometric Motif */
+.islamic-pattern {
+  background-color: transparent;
+  background-image: radial-gradient(circle at 50% 50%, rgba(198, 166, 107, 0.08) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
 }
 
-/* ============================================
-   Scrollbar (minimal)
-   ============================================ */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 3px; }
+.islamic-border {
+  border: 1px solid rgba(198, 166, 107, 0.3);
+}
 
-/* ============================================
-   Focus Styles
-   ============================================ */
-:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 3px;
+.gold-gradient-text {
+  background: linear-gradient(135deg, #a67c33 0%, #C6A66B 50%, #dfc491 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: #C6A66B;
   border-radius: 4px;
 }
-
-/* ============================================
-   Utility Classes
-   ============================================ */
-@layer utilities {
-  .text-balance { text-wrap: balance; }
-
-  .container-padded {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8;
-  }
-
-  /* Gradient text - navy to sky */
-  .gradient-text {
-    @apply bg-gradient-to-r from-[#0f2744] to-[#38bdf8] bg-clip-text text-transparent;
-  }
-
-  /* Section spacing */
-  .section-padding {
-    @apply py-20 lg:py-28;
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: #075B4A;
 }
-
-/* ============================================
-   Component Styles
-   ============================================ */
-@layer components {
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2
-           px-6 py-3 rounded-xl font-semibold text-sm text-white
-           bg-[#0284c7] hover:bg-[#0369a1] dark:bg-[#0284c7] dark:hover:bg-[#0369a1]
-           active:scale-[0.98]
-           transition-all duration-200
-           shadow-[0_2px_10px_rgba(2,132,199,0.22)];
-  }
-
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2
-           px-6 py-3 rounded-xl font-semibold text-sm
-           text-[#122840] dark:text-[#e8f0fb]
-           border border-[#dde3eb] dark:border-[#1e3456]
-           hover:border-[#0284c7] hover:text-[#0284c7] dark:hover:border-[#38bdf8] dark:hover:text-[#38bdf8]
-           bg-white dark:bg-[#132038]
-           active:scale-[0.98]
-           transition-all duration-200;
-  }
-
-  .section-label {
-    @apply inline-block text-xs font-semibold text-[#0284c7] dark:text-[#38bdf8]
-           uppercase tracking-[0.15em] mb-3;
-  }
-
-  .section-title {
-    @apply text-3xl sm:text-4xl font-bold text-[#0f2744] dark:text-[#e8f0fb]
-           leading-snug mb-4;
-  }
-
-  .section-subtitle {
-    @apply text-base text-[#4a6080] dark:text-[#94b4d4] leading-relaxed;
-  }
-
-  .card-base {
-    @apply bg-white dark:bg-[#132038] rounded-2xl
-           border border-[#e2e8f0] dark:border-[#1e3456]
-           shadow-[var(--shadow-card)]
-           transition-all duration-300
-           hover:shadow-[var(--shadow-card-hover)]
-           hover:-translate-y-0.5;
-  }
-
-  .input-field {
-    @apply w-full px-4 py-3 rounded-xl
-           bg-[#f8fafc] dark:bg-[#1a2d48]
-           border border-[#e2e8f0] dark:border-[#1e3456]
-           text-[#0f2744] dark:text-[#e8f0fb]
-           placeholder:text-[#8fa3bb] dark:placeholder:text-[#5a7a9a]
-           focus:outline-none focus:ring-2 focus:ring-[#38bdf8]/40 focus:border-[#38bdf8]
-           transition-all duration-200;
-  }
-
-  .input-error {
-    @apply border-red-400 dark:border-red-500 focus:ring-red-400/50 focus:border-red-400;
-  }
-}
-
-/* ============================================
-   Animations
-   ============================================ */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-8px); }
-}
-
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.55s ease-out both;
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.4s ease-out both;
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-/* Animation delays */
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-
-/* ============================================
-   Dashboard Mock (Hero visual)
-   ============================================ */
-.dashboard-mock {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(15, 39, 68, 0.12), 0 4px 20px rgba(15, 39, 68, 0.06);
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.dark .dashboard-mock {
-  background: #132038;
-  border-color: #1e3456;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-}
-
-/* ============================================
-   WhatsApp Button (small & subtle)
-   ============================================ */
-.whatsapp-btn-small {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: #25D366;
-  color: white;
-  border-radius: 50%;
-  text-decoration: none;
-  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35);
-  transition: all 0.2s ease;
-  border: none;
-  outline: none;
-}
-
-[dir="rtl"] .whatsapp-btn-small {
-  left: auto;
-  right: 24px;
-}
-
-.whatsapp-btn-small:hover {
-  background: #22c55e;
-  transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
-}
-
-.whatsapp-btn-small:active {
-  transform: scale(0.97);
-}
-
-/* ============================================
-   Flip Card
-   ============================================ */
-.flip-card {
-  perspective: 1200px;
-  -webkit-perspective: 1200px;
-}
-
-.flip-card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .flip-card:hover .flip-card-inner {
-    transform: rotateY(180deg);
-  }
-
-  [dir="rtl"] .flip-card:hover .flip-card-inner {
-    transform: rotateY(-180deg);
-  }
-}
-
-.flip-card.is-flipped .flip-card-inner,
-.flip-card-inner.is-flipped {
-  transform: rotateY(180deg);
-}
-
-[dir="rtl"] .flip-card.is-flipped .flip-card-inner,
-[dir="rtl"] .flip-card-inner.is-flipped {
-  transform: rotateY(-180deg);
-}
-
-.flip-card-front,
-.flip-card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.flip-card-back { transform: rotateY(180deg); }
-[dir="rtl"] .flip-card-back { transform: rotateY(-180deg); }
-

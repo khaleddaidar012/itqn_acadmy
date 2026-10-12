@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import type { Locale } from '@/types'
 import { HeroSection } from '@/components/sections/HeroSection'
 import { AboutSection } from '@/components/sections/AboutSection'
-import { ServicesSection } from '@/components/sections/ServicesSection'
-import { PortfolioPreview } from '@/components/sections/PortfolioPreview'
-import { CtaSection } from '@/components/sections/CtaSection'
+import { ProgramsSection } from '@/components/sections/ProgramsSection'
+import { WhyUsSection } from '@/components/sections/WhyUsSection'
+import { PricingSection } from '@/components/sections/PricingSection'
+import { ContactSection } from '@/components/sections/ContactSection'
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -14,14 +15,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: rawLocale } = await params
   const locale = (rawLocale === 'en' ? 'en' : 'ar') as Locale
   const isArabic = locale === 'ar'
-  
+
   return {
     title: isArabic
-      ? 'دعيدر للحلول البرمجية | شريكك التقني لتطوير شغلك'
-      : 'Daidar Solutions | Your Technical Partner for Business Growth',
+      ? 'أكاديمية إتقان للقرآن الكريم | ابدأ رحلتك مع القرآن الكريم'
+      : 'ITQAN Quran Academy | Begin Your Journey with the Holy Quran',
     description: isArabic
-      ? 'دعيدر للحلول البرمجية تقدم مواقع إلكترونية، متاجر إلكترونية، أنظمة مخصصة وحلول SaaS احترافية. شريكك التقني لتطوير شغلك.'
-      : 'Daidar Solutions offers professional websites, e-commerce stores, custom systems, and SaaS solutions. Your technical partner for business growth.',
+      ? 'تعلم القرآن الكريم حفظًا وتلاوةً وتجويدًا، بخطة تعليمية تناسب مستواك ووقتك مع نخبة من المعلمين والمعلمات ذوي الخبرة والكفاءة.'
+      : 'Learn the Holy Quran through memorization, recitation, and Tajweed with a structured plan tailored to your level and schedule.',
+    openGraph: {
+      title: isArabic
+        ? 'أكاديمية إتقان للقرآن الكريم | إتقان أكاديمي'
+        : 'ITQAN Quran Academy | Excellence in Quranic Education',
+      description: isArabic
+        ? 'أكاديمية رائدة في تدريس وتحفيظ القرآن الكريم وتدريس أحكام التجويد عن بُعد لكافة المستويات والأعمار.'
+        : 'Leading academy for online Quran memorization, Tajweed courses, and recitation practice worldwide.',
+      images: [{ url: '/logo.png', width: 800, height: 800, alt: 'ITQAN Quran Academy' }],
+    },
   }
 }
 
@@ -33,9 +43,10 @@ export default async function HomePage({ params }: Props) {
     <>
       <HeroSection locale={locale} />
       <AboutSection locale={locale} />
-      <ServicesSection locale={locale} />
-      <PortfolioPreview locale={locale} />
-      <CtaSection locale={locale} />
+      <ProgramsSection locale={locale} />
+      <WhyUsSection locale={locale} />
+      <PricingSection locale={locale} />
+      <ContactSection locale={locale} />
     </>
   )
 }

@@ -9,60 +9,67 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'var(--font-cairo)', 'sans-serif'],
+        sans: ['var(--font-cairo)', 'var(--font-inter)', 'sans-serif'],
         arabic: ['var(--font-cairo)', 'sans-serif'],
         latin: ['var(--font-inter)', 'sans-serif'],
       },
       colors: {
+        // ITQAN Brand Colors
         brand: {
-          50:  '#eff8ff',
-          100: '#dbeffe',
-          200: '#bfe3fd',
-          300: '#93d0fb',
-          400: '#60b5f8',
-          500: '#3b96f4',
-          600: '#2577e8',
-          700: '#1d61d5',
-          800: '#1d4fac',
-          900: '#1d4488',
-          950: '#162a53',
+          50:  '#f0f7f5',
+          100: '#dbeeec',
+          200: '#badfd9',
+          300: '#8dc8be',
+          400: '#5ba99d',
+          500: '#348a7e',
+          600: '#075B4A', // Core Deep Islamic Green
+          700: '#064c3e',
+          800: '#053d32',
+          900: '#043229',
+          950: '#021c17',
         },
-        sky: {
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
+        gold: {
+          50:  '#fbf9f2',
+          100: '#f6f0df',
+          200: '#ece0c0',
+          300: '#dec796',
+          400: '#d3b174',
+          500: '#C6A66B', // Core Elegant Gold
+          600: '#b08e50',
+          700: '#8c6f3d',
+          800: '#6f5732',
+          900: '#5b472c',
+        },
+        cream: {
+          50: '#fdfcf9',
+          100: '#FAF8F2', // Warm Cream background
+          200: '#f4efe2',
+          300: '#eae0cc',
+        },
+        charcoal: {
+          800: '#26332F', // Deep Charcoal text
+          900: '#1b2421',
+          950: '#121816',
         },
       },
       animation: {
-        'float': 'float 6s ease-in-out infinite',
-        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'shimmer': 'shimmer 2s linear infinite',
         'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
-        'flip': 'flip 0.6s ease-in-out',
+        'fade-in': 'fadeIn 0.5s ease-out forwards',
+        'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
       },
       keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-20px)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(30px)' },
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        flip: {
-          '0%': { transform: 'rotateY(0deg)' },
-          '100%': { transform: 'rotateY(180deg)' },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
-      },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'mesh-light': 'linear-gradient(135deg, #eff8ff 0%, #f0fdf4 50%, #fefce8 100%)',
-        'mesh-dark': 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.85' },
+        },
       },
     },
   },

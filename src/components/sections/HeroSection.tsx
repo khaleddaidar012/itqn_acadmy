@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import Image from 'next/image'
+import { Sparkles, ArrowLeft, ArrowRight, BookOpen, Clock, Award, ShieldCheck } from 'lucide-react'
 import { getTranslations } from '@/locales'
 import type { Locale } from '@/types'
 
@@ -15,222 +16,134 @@ export function HeroSection({ locale }: HeroSectionProps) {
   return (
     <section
       id="hero"
-      className="relative min-h-screen flex items-center overflow-hidden bg-[#f1f4f8] dark:bg-[#0b1628]"
+      className="relative min-h-[92vh] flex items-center overflow-hidden bg-gradient-to-b from-cream-100 via-cream-50 to-white dark:from-[#061e19] dark:via-[#082a23] dark:to-[#051814] pt-24 pb-16"
       aria-label={locale === 'ar' ? 'القسم الافتتاحي' : 'Hero section'}
     >
-      {/* Subtle background accent */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div className="absolute top-0 inset-x-0 h-[480px] bg-gradient-to-b from-[#e2eaf4]/60 to-transparent dark:from-[#0d1e38] dark:to-transparent opacity-60" />
-      </div>
+      {/* Subtle Islamic Motif Overlay */}
+      <div className="absolute inset-0 islamic-pattern opacity-40 pointer-events-none" aria-hidden="true" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-28 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+      {/* Decorative Glow Elements */}
+      <div className="absolute top-1/4 -right-24 w-96 h-96 bg-gold-400/10 dark:bg-gold-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 -left-24 w-96 h-96 bg-brand-500/10 dark:bg-brand-600/15 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
 
           {/* ── Text Content ─────────────────────── */}
-          <div className={`space-y-8 ${isRTL ? 'text-right' : 'text-left'}`}>
+          <div className={`lg:col-span-7 space-y-7 ${isRTL ? 'text-right' : 'text-left'}`}>
 
-            {/* Label */}
-            <div className="animate-fade-in-up">
-              <span className="section-label">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 dark:bg-brand-900/60 border border-brand-200/80 dark:border-brand-700/50 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-gold-500 animate-pulse" />
+              <span className="text-xs sm:text-sm font-bold text-brand-800 dark:text-gold-300">
                 {t.hero.badge}
               </span>
             </div>
 
-            {/* Heading */}
-            <div className="animate-fade-in-up delay-100">
-              <h1 className="text-4xl sm:text-5xl font-bold leading-tight text-[#122840] dark:text-[#e8f0fb] text-balance">
-                {locale === 'ar' ? (
-                  <>
-                    شريكك التقني{' '}
-                    <span className="text-[#0284c7] dark:text-[#38bdf8]">لتطوير شغلك</span>
-                  </>
-                ) : (
-                  <>
-                    Your Technical Partner{' '}
-                    <span className="text-[#0284c7] dark:text-[#38bdf8]">for Business Growth</span>
-                  </>
-                )}
+            {/* Headline */}
+            <div className="space-y-2">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.25] text-brand-900 dark:text-cream-100 tracking-tight">
+                {t.hero.title}{' '}
+                <span className="gold-gradient-text block sm:inline mt-1 sm:mt-0">
+                  {t.hero.titleHighlight}
+                </span>
               </h1>
             </div>
 
             {/* Subtitle */}
-            <p className="text-base sm:text-lg text-[#4a6080] dark:text-[#94b4d4] leading-relaxed max-w-md animate-fade-in-up delay-200">
-              {locale === 'ar'
-                ? 'نطوّر مواقع ومتاجر وأنظمة مخصصة تساعدك تنظّم شغلك وتوسّع نشاطك.'
-                : 'We build websites, stores, and custom systems that help you organize your business and expand your reach.'}
+            <p className="text-base sm:text-xl text-charcoal-800/80 dark:text-cream-200/90 leading-relaxed max-w-2xl">
+              {t.hero.subtitle}
             </p>
 
             {/* CTA Buttons */}
-            <div
-              className={`flex flex-wrap gap-3 animate-fade-in-up delay-300 ${
-                isRTL ? 'justify-start' : 'justify-start'
-              }`}
-            >
+            <div className="flex flex-wrap gap-4 pt-2">
               <Link
-                href={`/${locale}/request`}
-                className="btn-primary"
-                id="hero-request-btn"
+                href={`/${locale}#pricing`}
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full font-bold text-sm sm:text-base text-white bg-gradient-to-r from-brand-600 via-brand-700 to-brand-800 hover:from-brand-700 hover:to-brand-900 shadow-[0_6px_22px_rgba(7,91,74,0.35)] hover:shadow-[0_8px_28px_rgba(7,91,74,0.45)] transition-all duration-300 hover:-translate-y-0.5"
+                id="hero-enroll-cta"
               >
-                {locale === 'ar' ? 'اطلب مشروعك' : 'Request Your Project'}
-                <ArrowIcon size={16} />
+                <Sparkles size={18} className="text-gold-300" />
+                <span>{t.hero.ctaPrimary}</span>
+                <ArrowIcon size={18} />
               </Link>
+
               <Link
-                href={`/${locale}/portfolio`}
-                className="btn-secondary"
-                id="hero-portfolio-btn"
+                href={`/${locale}#programs`}
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm sm:text-base text-brand-800 dark:text-cream-100 bg-white/90 dark:bg-brand-900/40 border border-gold-400/50 hover:bg-gold-50 dark:hover:bg-brand-800/60 shadow-sm transition-all duration-200"
+                id="hero-explore-cta"
               >
-                {locale === 'ar' ? 'شاهد أعمالنا' : 'View Our Work'}
+                <span>{t.hero.ctaSecondary}</span>
               </Link>
             </div>
 
-            {/* Trust row */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 animate-fade-in-up delay-400">
-              {(locale === 'ar'
-                ? ['مواقع احترافية', 'أنظمة مخصصة', 'دعم مستمر']
-                : ['Professional Sites', 'Custom Systems', 'Ongoing Support']
-              ).map((item) => (
-                <span
-                  key={item}
-                  className="flex items-center gap-1.5 text-sm text-[#4a6080] dark:text-[#94b4d4] font-medium"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#38bdf8] flex-shrink-0" />
-                  {item}
+            {/* Trust Highlights Strip */}
+            <div className="pt-6 border-t border-brand-100/80 dark:border-brand-800/50 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gold-100 dark:bg-brand-800/60 flex items-center justify-center flex-shrink-0 text-gold-600 dark:text-gold-400">
+                  <Award size={16} />
+                </div>
+                <span className="text-xs font-semibold text-charcoal-800 dark:text-cream-200">
+                  {t.hero.stats.teachers}
                 </span>
-              ))}
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-800/60 flex items-center justify-center flex-shrink-0 text-brand-700 dark:text-brand-300">
+                  <Clock size={16} />
+                </div>
+                <span className="text-xs font-semibold text-charcoal-800 dark:text-cream-200">
+                  {t.hero.stats.flexibility}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-cream-300/80 dark:bg-brand-800/60 flex items-center justify-center flex-shrink-0 text-brand-800 dark:text-gold-300">
+                  <BookOpen size={16} />
+                </div>
+                <span className="text-xs font-semibold text-charcoal-800 dark:text-cream-200">
+                  {t.hero.stats.individual}
+                </span>
+              </div>
             </div>
+
           </div>
 
-          {/* ── Dashboard Mock Visual ─────────────── */}
-          <div className="relative flex items-center justify-center animate-fade-in-up delay-200">
-            <div className="relative w-full max-w-lg mx-auto">
+          {/* ── Visual Brand Emblem ─────────────────── */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="relative w-72 sm:w-96 aspect-square rounded-3xl bg-gradient-to-br from-white via-cream-100 to-gold-50 dark:from-brand-900/90 dark:via-[#092e26] dark:to-[#061e19] p-7 shadow-[0_16px_50px_rgba(7,91,74,0.15)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.4)] border border-gold-300/40 flex flex-col items-center justify-center text-center group">
+              
+              {/* Decorative Corner Ornaments */}
+              <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-gold-500 rounded-tl-sm pointer-events-none" />
+              <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-gold-500 rounded-tr-sm pointer-events-none" />
+              <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-gold-500 rounded-bl-sm pointer-events-none" />
+              <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-gold-500 rounded-br-sm pointer-events-none" />
 
-              {/* Subtle glow behind card */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-15 dark:opacity-30 blur-3xl pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 50% 50%, #0284c7 0%, transparent 70%)' }}
-                aria-hidden="true"
-              />
+              {/* Logo Emblem */}
+              <div className="relative w-44 h-44 sm:w-56 sm:h-56 mb-4 transition-transform duration-500 group-hover:scale-105">
+                <Image
+                  src="/logo.png"
+                  alt="شعار أكاديمية إتقان للقرآن الكريم"
+                  fill
+                  sizes="240px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
 
-              {/* Dashboard card */}
-              <div className="dashboard-mock relative overflow-hidden">
+              {/* Quranic Verse / Slogan Motto */}
+              <div className="space-y-1">
+                <p className="font-bold text-sm sm:text-base text-brand-900 dark:text-cream-100">
+                  {locale === 'ar' ? 'أكاديمية إتقان للقرآن الكريم' : 'ITQAN Quran Academy'}
+                </p>
+                <p className="text-xs font-semibold text-gold-600 dark:text-gold-400">
+                  {locale === 'ar' ? 'خطوات صغيرة.. أثر كبير' : 'Small Steps, Big Progress'}
+                </p>
+              </div>
 
-                {/* Top bar */}
-                <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3.5 border-b border-[#e2e8f0] dark:border-[#1e3456]">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#f87171]" />
-                    <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#fbbf24]" />
-                    <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#34d399]" />
-                  </div>
-                  <div className="flex-1 mx-2 sm:mx-4">
-                    <div className="bg-[#f1f5f9] dark:bg-[#1a2d48] rounded-md h-5 sm:h-6 px-2 sm:px-3 flex items-center">
-                      <span className="text-[10px] sm:text-xs text-[#8fa3bb] font-mono truncate">
-                        {locale === 'ar' ? 'لوحة الإدارة — دعيدر' : 'admin.daidar.io'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#38bdf8]/20 flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#38bdf8]" />
-                  </div>
-                </div>
-
-                {/* Sidebar + Content */}
-                <div className="flex" style={{ minHeight: '280px' }}>
-
-                  {/* Sidebar */}
-                  <div className="w-11 sm:w-[72px] bg-[#f8fafc] dark:bg-[#0f1d33] border-e border-[#e2e8f0] dark:border-[#1e3456] flex flex-col items-center gap-2 sm:gap-3 py-3 sm:py-4 flex-shrink-0">
-                    {/* Logo area */}
-                    <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#38bdf8]/15 flex items-center justify-center mb-1 sm:mb-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:w-5 sm:h-5">
-                        <rect x="3" y="3" width="8" height="8" rx="2" fill="#38bdf8"/>
-                        <rect x="13" y="3" width="8" height="8" rx="2" fill="#0f2744" fillOpacity="0.3"/>
-                        <rect x="3" y="13" width="8" height="8" rx="2" fill="#0f2744" fillOpacity="0.3"/>
-                        <rect x="13" y="13" width="8" height="8" rx="2" fill="#38bdf8" fillOpacity="0.5"/>
-                      </svg>
-                    </div>
-                    {[
-                      <svg key="home" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:w-4 sm:h-4"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-                      <svg key="chart" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:w-4 sm:h-4"><path d="M18 20V10M12 20V4M6 20v-6" stroke="#8fa3bb" strokeWidth="2" strokeLinecap="round"/></svg>,
-                      <svg key="users" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:w-4 sm:h-4"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z" stroke="#8fa3bb" strokeWidth="2" strokeLinecap="round"/></svg>,
-                      <svg key="settings" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sm:w-4 sm:h-4"><circle cx="12" cy="12" r="3" stroke="#8fa3bb" strokeWidth="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="#8fa3bb" strokeWidth="2"/></svg>,
-                    ].map((icon, i) => (
-                      <div
-                        key={i}
-                        className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center transition-colors ${
-                          i === 0
-                            ? 'bg-[#38bdf8]/15'
-                            : 'hover:bg-[#f1f5f9] dark:hover:bg-[#1a2d48]'
-                        }`}
-                      >
-                        {icon}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Main content */}
-                  <div className="flex-1 min-w-0 p-3 sm:p-5 overflow-hidden">
-                    {/* Stats row */}
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-5">
-                      {[
-                        { label: locale === 'ar' ? 'المبيعات' : 'Sales', val: '٢,٤٨٠', color: '#38bdf8' },
-                        { label: locale === 'ar' ? 'الطلبات' : 'Orders', val: '١٢٨', color: '#34d399' },
-                        { label: locale === 'ar' ? 'العملاء' : 'Clients', val: '٤٧', color: '#a78bfa' },
-                      ].map(({ label, val, color }) => (
-                        <div
-                          key={label}
-                          className="bg-[#f8fafc] dark:bg-[#0f1d33] rounded-lg sm:rounded-xl p-2 sm:p-3 border border-[#e2e8f0] dark:border-[#1e3456] min-w-0"
-                        >
-                          <div className="text-[9px] sm:text-[10px] text-[#8fa3bb] mb-0.5 sm:mb-1 truncate">{label}</div>
-                          <div className="text-xs sm:text-base font-bold truncate" style={{ color }}>{val}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Chart area */}
-                    <div className="bg-[#f8fafc] dark:bg-[#0f1d33] rounded-lg sm:rounded-xl p-2.5 sm:p-3 mb-3 sm:mb-4 border border-[#e2e8f0] dark:border-[#1e3456]">
-                      <div className="text-[9px] sm:text-[10px] text-[#8fa3bb] mb-2 sm:mb-3">{locale === 'ar' ? 'الأداء الشهري' : 'Monthly Performance'}</div>
-                      {/* Mini bar chart */}
-                      <div className="flex items-end gap-1 sm:gap-1.5 h-12 sm:h-16">
-                        {[40, 65, 45, 80, 60, 90, 70, 85, 55, 95, 75, 88].map((h, i) => (
-                          <div
-                            key={i}
-                            className="flex-1 rounded-sm transition-all"
-                            style={{
-                              height: `${h}%`,
-                              background: i === 10 || i === 11
-                                ? '#38bdf8'
-                                : `rgba(56,189,248,${0.2 + (h / 100) * 0.3})`,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Recent items */}
-                    <div className="space-y-1.5 sm:space-y-2">
-                      {[
-                        { name: locale === 'ar' ? 'متجر الرياض' : 'Riyadh Store', status: locale === 'ar' ? 'مكتمل' : 'Done', color: '#34d399' },
-                        { name: locale === 'ar' ? 'نظام المخزون' : 'Inventory System', status: locale === 'ar' ? 'جاري' : 'Active', color: '#38bdf8' },
-                        { name: locale === 'ar' ? 'موقع العيادة' : 'Clinic Website', status: locale === 'ar' ? 'قيد المراجعة' : 'Review', color: '#fbbf24' },
-                      ].map(({ name, status, color }) => (
-                        <div
-                          key={name}
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                            <span className="text-[10px] sm:text-[11px] text-[#4a6080] dark:text-[#94b4d4] truncate">{name}</span>
-                          </div>
-                          <span
-                            className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
-                            style={{ background: `${color}18`, color }}
-                          >
-                            {status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              {/* Subtle Floating Badge */}
+              <div className="absolute -bottom-4 bg-white dark:bg-brand-900 px-4 py-1.5 rounded-full shadow-lg border border-gold-400/40 text-xs font-bold text-brand-800 dark:text-cream-100 flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-gold-500" />
+                <span>{locale === 'ar' ? 'باقة من المعلمين والمعلمات لتحفيظ وتعليم القرآن الكريم' : 'A team of teachers for Quran Teaching & Memorization'}</span>
               </div>
             </div>
           </div>

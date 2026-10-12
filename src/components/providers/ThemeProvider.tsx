@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true)
     try {
-      const stored = localStorage.getItem('daidar-theme') as Theme | null
+      const stored = localStorage.getItem('itqan-theme') as Theme | null
       if (stored === 'dark') {
         setThemeState('dark')
         applyTheme('dark')
@@ -53,7 +53,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(next)
     applyTheme(next)
     try {
-      localStorage.setItem('daidar-theme', next)
+      localStorage.setItem('itqan-theme', next)
     } catch {}
   }
 
@@ -61,7 +61,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(t)
     applyTheme(t)
     try {
-      localStorage.setItem('daidar-theme', t)
+      localStorage.setItem('itqan-theme', t)
     } catch {}
   }
 

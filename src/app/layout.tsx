@@ -24,31 +24,35 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://daidarsolutions.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://itqanacademy.com'),
   title: {
-    template: '%s | دعيدر للحلول البرمجية',
-    default: 'دعيدر للحلول البرمجية | Daidar Solutions',
+    template: '%s | أكاديمية إتقان للقرآن الكريم',
+    default: 'أكاديمية إتقان للقرآن الكريم | ITQAN Quran Academy',
   },
   description:
-    'دعيدر للحلول البرمجية — شريكك التقني لتطوير شغلك. نصمم مواقع إلكترونية، متاجر، أنظمة مخصصة وحلول SaaS احترافية.',
+    'أكاديمية إتقان لتعليم وتحفيظ القرآن الكريم وتدريس أحكام التجويد والتلاوة عبر الإنترنت لكافة الأعمار والمستويات بنخبة من المعلمين والمعلمات ذوي الخبرة والكفاءة.',
   keywords: [
-    'دعيدر للحلول البرمجية',
-    'Daidar Solutions',
-    'تطوير مواقع',
-    'متاجر إلكترونية',
-    'أنظمة مخصصة',
-    'SaaS',
-    'web development',
-    'custom systems',
-    'e-commerce',
+    'أكاديمية إتقان',
+    'تحفيظ قرآن كريم',
+    'دورة تجويد',
+    'تعليم القرآن عن بعد',
+    'ITQAN Quran Academy',
+    'Online Quran Memorization',
+    'Tajweed Course',
+    'Quran Recitation',
   ],
-  authors: [{ name: 'Khaled Hesham' }],
-  creator: 'Daidar Solutions',
+  authors: [{ name: 'ITQAN Quran Academy' }],
+  creator: 'ITQAN Quran Academy',
   openGraph: {
     type: 'website',
     locale: 'ar_EG',
     alternateLocale: 'en_US',
-    siteName: 'دعيدر للحلول البرمجية | Daidar Solutions',
+    siteName: 'أكاديمية إتقان للقرآن الكريم | ITQAN Quran Academy',
+    images: [{ url: '/logo.png', width: 800, height: 800, alt: 'ITQAN Quran Academy Logo' }],
+  },
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
   robots: {
     index: true,
@@ -68,7 +72,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const stored = localStorage.getItem('daidar-theme');
+                const stored = localStorage.getItem('itqan-theme');
                 if (stored === 'dark') {
                   document.documentElement.classList.add('dark');
                   document.documentElement.style.colorScheme = 'dark';

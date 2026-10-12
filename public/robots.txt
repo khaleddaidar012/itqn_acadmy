@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://daidarsolutions.com/sitemap.xml
+Sitemap: https://itqanacademy.com/sitemap.xml
