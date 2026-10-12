@@ -177,6 +177,18 @@ const en = {
     switchTo: 'العربية',
     current: 'English',
   },
+  portfolio: {
+    sectionLabel: 'Portfolio',
+  },
+  portfolio_page: {
+    pageTitle: 'Our Portfolio',
+    pageSubtitle: 'Browse Daidar Solutions portfolio — websites, e-commerce, and custom systems.',
+  },
+  request: {
+    backToHome: 'Back to Home',
+    pageTitle: 'Request a Service',
+    pageSubtitle: 'Send us your project details and we\'ll get back to you as soon as possible.',
+  },
   common: {
     loading: 'Loading...',
     backHome: 'Back to Home',

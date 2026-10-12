@@ -177,6 +177,18 @@ const ar = {
     switchTo: 'English',
     current: 'العربية',
   },
+  portfolio: {
+    sectionLabel: 'أعمالنا',
+  },
+  portfolio_page: {
+    pageTitle: 'معرض أعمالنا',
+    pageSubtitle: 'استعرض مشاريع دعيدر للحلول البرمجية — مواقع، متاجر، وأنظمة مخصصة.',
+  },
+  request: {
+    backToHome: 'العودة للرئيسية',
+    pageTitle: 'اطلب خدمة',
+    pageSubtitle: 'أرسل لنا تفاصيل مشروعك وسنتواصل معك في أقرب وقت ممكن.',
+  },
   common: {
     loading: 'جارٍ التحميل...',
     backHome: 'العودة للرئيسية',

@@ -7,12 +7,14 @@ interface RegionContextType {
   region: Region
   currency: Currency
   isLoaded: boolean
+  toggleRegion: () => void
 }
 
 const RegionContext = createContext<RegionContextType>({
   region: 'INTL',
   currency: 'USD',
   isLoaded: false,
+  toggleRegion: () => {},
 })
 
 export function RegionProvider({ children }: { children: React.ReactNode }) {
@@ -73,8 +75,12 @@ export function RegionProvider({ children }: { children: React.ReactNode }) {
 
   const currency: Currency = region === 'EG' ? 'EGP' : 'USD'
 
+  function toggleRegion() {
+    setRegionState((prev) => (prev === 'EG' ? 'INTL' : 'EG'))
+  }
+
   return (
-    <RegionContext.Provider value={{ region, currency, isLoaded }}>
+    <RegionContext.Provider value={{ region, currency, isLoaded, toggleRegion }}>
       {children}
     </RegionContext.Provider>
   )
