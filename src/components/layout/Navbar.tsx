@@ -44,6 +44,8 @@ export function Navbar({ locale }: NavbarProps) {
   }, [isMenuOpen])
 
   const navLinks = [
+    { href: `/${locale}/login`, label: locale === 'ar' ? 'تسجيل الدخول' : 'Sign in' },
+    { href: `/${locale}/register`, label: locale === 'ar' ? 'حساب طالب جديد' : 'Student sign up' },
     { href: `/${locale}`, label: t.nav.home },
     { href: `/${locale}#about`, label: t.nav.about },
     { href: `/${locale}#programs`, label: t.nav.programs },

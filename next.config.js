@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'export',
+  serverExternalPackages: ['node:sqlite'],
   images: {
     unoptimized: true,
     formats: ['image/avif', 'image/webp'],

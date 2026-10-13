@@ -131,3 +131,9 @@ main {
 ::-webkit-scrollbar-thumb:hover {
   background: #075B4A;
 }
+/* Academy system controls */
+.system-input { display: block; width: 100%; padding: .7rem .9rem; border: 1px solid #d5e0da; border-radius: .8rem; margin-top: .4rem; background: white; color: #163b32; }
+.system-input:focus { outline: 2px solid #168064; outline-offset: 2px; }
+.system-button { border-radius: .8rem; padding: .7rem 1rem; background: #10634f; color: white; font-weight: 700; }
+.system-button:disabled { opacity: .55; cursor: wait; }
+.system-button:focus-visible { outline: 2px solid #168064; outline-offset: 3px; }
