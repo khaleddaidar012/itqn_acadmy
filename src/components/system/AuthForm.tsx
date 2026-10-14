@@ -31,7 +31,7 @@ export default function AuthForm({ register, locale }: { register?: boolean; loc
         {error && <p role="alert" className="text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>}
         <button disabled={busy} className="system-button w-full">{busy ? 'جارٍ التنفيذ…' : register ? 'إنشاء حساب الطالب' : 'تسجيل الدخول'}</button>
       </form>
-      <p className="text-sm mt-6 text-center">{register ? 'لديك حساب؟' : 'طالب جديد؟'} <Link className="font-bold text-emerald-700" href={`/${locale}/${register ? 'login' : 'register'}`}>{register ? 'تسجيل الدخول' : 'إنشاء حساب'}</Link></p>
+      <p className="text-sm mt-6 text-center">{register ? 'لديك حساب؟' : 'ليس لديك حساب؟'} <Link className="font-bold text-emerald-700 underline-offset-4 hover:underline" href={`/${locale}/${register ? 'login' : 'register'}`}>{register ? 'تسجيل الدخول' : 'إنشاء حساب طالب جديد'}</Link></p>
     </div>
   </main>
 }

@@ -1,7 +1,8 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { schema } from './schema'
-export type User = { id: number; name: string; email: string; role: 'admin' | 'teacher' | 'student' | 'parent'; manage: number; rate: number; currency: string; subjects: string; parent_id: number | null; pages: number }
+import { staffRules } from './staff-rules'
+export type User = { id: number; name: string; email: string; role: 'admin' | 'teacher' | 'student' | 'parent'; manage: number; rate: number; currency: string; subjects: string; parent_id: number | null; pages: number; permissions?: string | null; disabled?: number; enrollment_status?: 'pending' | 'active' }
 type Value = string | number | null
 type Row = Record<string, Value>
 export type Query = { sql: string; values: Value[] }
@@ -25,6 +26,11 @@ async function connection(): Promise<LocalDatabase | D1Database> {
     mkdirSync(directory, { recursive: true })
     const database = new DatabaseSync(join(directory, 'itqan.sqlite'), { timeout: 5000 })
     database.exec('PRAGMA journal_mode=WAL; ' + schema)
+    const columns = new Set(database.prepare('PRAGMA table_info(users)').all().map(c => c.name))
+    if (!columns.has('permissions')) database.exec('ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL')
+    if (!columns.has('disabled')) database.exec('ALTER TABLE users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0')
+    if (!columns.has('enrollment_status')) database.exec("ALTER TABLE users ADD COLUMN enrollment_status TEXT NOT NULL DEFAULT 'active' CHECK(enrollment_status IN ('pending','active'))")
+    database.exec(staffRules)
     return database
   })()
   return local
@@ -78,7 +84,7 @@ export async function bootstrapAdmin() {
   if (await db().prepare("SELECT id FROM users WHERE role='admin'").get()) return
   await db().prepare("INSERT INTO users(name,email,password,role,manage) SELECT ?,?,?,'admin',1 WHERE NOT EXISTS (SELECT 1 FROM users WHERE role='admin')").run(process.env.ITQAN_ADMIN_NAME || 'مدير الأكاديمية', email, hashPassword(password))
 }
-export const safeUser = async (id: number) => await db().prepare('SELECT id,name,email,role,manage,rate,currency,subjects,parent_id,pages FROM users WHERE id=?').get(id) as User | undefined
+export const safeUser = async (id: number) => await db().prepare('SELECT id,name,email,role,manage,rate,currency,subjects,parent_id,pages,permissions,disabled,enrollment_status FROM users WHERE id=?').get(id) as User | undefined
 export async function rateLimit(key: string) {
   const now = Date.now()
   await db().prepare('DELETE FROM attempts WHERE expires < ?').run(now)

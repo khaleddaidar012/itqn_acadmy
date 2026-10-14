@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Globe, Sun, Moon, Sparkles } from 'lucide-react'
+import { Menu, X, Globe, Sun, Moon, LogIn, ArrowUpLeft } from 'lucide-react'
 import { getTranslations } from '@/locales'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { useRegion } from '@/components/providers/RegionProvider'
@@ -44,8 +44,6 @@ export function Navbar({ locale }: NavbarProps) {
   }, [isMenuOpen])
 
   const navLinks = [
-    { href: `/${locale}/login`, label: locale === 'ar' ? 'تسجيل الدخول' : 'Sign in' },
-    { href: `/${locale}/register`, label: locale === 'ar' ? 'حساب طالب جديد' : 'Student sign up' },
     { href: `/${locale}`, label: t.nav.home },
     { href: `/${locale}#about`, label: t.nav.about },
     { href: `/${locale}#programs`, label: t.nav.programs },
@@ -116,7 +114,7 @@ export function Navbar({ locale }: NavbarProps) {
           <button
             type="button"
             onClick={toggleRegion}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-cream-200 dark:bg-brand-900/60 text-brand-800 dark:text-gold-300 border border-gold-300/40 hover:bg-gold-100 dark:hover:bg-brand-800 transition-all duration-200"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-cream-200 dark:bg-brand-900/60 text-brand-800 dark:text-gold-300 border border-gold-300/40 hover:bg-gold-100 dark:hover:bg-brand-800 transition-all duration-200"
             title="تبديل منطقة التسعير والعملة / Switch Region & Currency"
           >
             <span>{region === 'EG' ? '🇪🇬 ج.م EGP' : '🌐 $ USD'}</span>
@@ -126,7 +124,7 @@ export function Navbar({ locale }: NavbarProps) {
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-charcoal-800 dark:text-cream-200 hover:text-gold-600 hover:bg-cream-200 dark:hover:bg-brand-900/40 transition-colors"
+            className="hidden sm:inline-flex p-2 rounded-lg text-charcoal-800 dark:text-cream-200 hover:text-gold-600 hover:bg-cream-200 dark:hover:bg-brand-900/40 transition-colors"
             aria-label="تبديل المظهر / Toggle theme"
             id="theme-toggle-btn"
           >
@@ -146,12 +144,13 @@ export function Navbar({ locale }: NavbarProps) {
 
           {/* Primary CTA Button */}
           <Link
-            href={`/${locale}#pricing`}
-            className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-[0_4px_14px_rgba(7,91,74,0.3)] hover:shadow-[0_6px_20px_rgba(7,91,74,0.4)] transition-all duration-200 hover:-translate-y-0.5"
-            id="nav-enroll-btn"
+            href={`/${locale}/login`}
+            className="inline-flex shrink-0 items-center gap-2 px-3 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-800 border border-gold-300/30 shadow-[0_4px_14px_rgba(7,91,74,0.25)] hover:shadow-[0_6px_20px_rgba(7,91,74,0.35)] transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
+            id="nav-login-btn"
           >
-            <Sparkles size={14} className="text-gold-300" />
-            <span>{t.nav.startLearning}</span>
+            <LogIn size={16} className="text-gold-300" />
+            <span>{locale === 'ar' ? 'تسجيل الدخول' : 'Sign in'}</span>
+            <ArrowUpLeft size={14} className="hidden xl:block text-gold-300" />
           </Link>
 
           {/* Mobile Menu Toggle */}
@@ -220,14 +219,10 @@ export function Navbar({ locale }: NavbarProps) {
               <span>{t.lang.switchTo}</span>
             </Link>
 
-            <Link
-              href={`/${locale}#pricing`}
-              onClick={() => setIsMenuOpen(false)}
-              className="w-full py-3 rounded-xl text-center text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-700 shadow-md flex items-center justify-center gap-2"
-            >
-              <Sparkles size={16} className="text-gold-300" />
-              <span>{t.nav.startLearning}</span>
-            </Link>
+            <button type="button" onClick={toggleTheme} className="flex justify-center items-center gap-2 py-3 rounded-xl border border-cream-300 dark:border-brand-800 text-sm">
+              <Sun size={16} className="hidden dark:block" /><Moon size={16} className="dark:hidden" />
+              {locale === 'ar' ? 'تغيير المظهر' : 'Change theme'}
+            </button>
           </div>
         </div>
       </div>
