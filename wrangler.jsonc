@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "itqan-academy" }],
-  "vars": { "ITQAN_USE_D1": "1", "ITQAN_CANCEL_HOURS": "12" },
+  "vars": { "ITQAN_USE_D1": "1", "ITQAN_CANCEL_HOURS": "12", "ITQAN_MEETING_PROVIDER": "zoom" },
   "d1_databases": [{
     "binding": "DB",
     "database_name": "itqan-academy",

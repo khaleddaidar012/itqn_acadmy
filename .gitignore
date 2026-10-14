@@ -39,3 +39,4 @@ yarn-error.log*
 /.open-next/
 .dev.vars
 .dev.vars.*
+/.local/
