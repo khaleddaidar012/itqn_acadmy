@@ -36,3 +36,6 @@ yarn-error.log*
 .vercel
 .wrangler
 /.data/
+/.open-next/
+.dev.vars
+.dev.vars.*

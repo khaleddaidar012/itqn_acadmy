@@ -1,17 +1,28 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 import { accounting } from '../src/lib/system/accounting.ts'
 
 const dir = mkdtempSync(join(tmpdir(), 'itqan-test-'))
 const origin = 'http://localhost:3107'
 const password = 'test-only-password-12345'
-const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3107'], {
-  env: { ...process.env, ITQAN_DATA_DIR: dir, ITQAN_ADMIN_EMAIL: 'admin@test.example', ITQAN_ADMIN_PASSWORD: password }, stdio: ['ignore', 'pipe', 'pipe'],
+const toolEnv = { ...process.env, WRANGLER_SEND_METRICS: 'false', CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false', XDG_CONFIG_HOME: join(dir, 'config'), WRANGLER_REGISTRY_PATH: join(dir, 'registry'), WRANGLER_LOG_PATH: join(dir, 'logs') }
+const worker = process.argv.includes('--worker')
+const d1 = worker || process.argv.includes('--d1')
+if (d1) {
+  const migration = spawnSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'd1', 'migrations', 'apply', 'itqan-academy', '--local', '--persist-to', dir], { env: { ...toolEnv, CI: 'true' }, input: 'y\n', timeout: 60000, encoding: 'utf8' })
+  if (migration.status !== 0) { rmSync(dir, { recursive: true, force: true }); throw new Error(migration.stdout + migration.stderr) }
+}
+const serverArgs = worker
+  ? ['node_modules/wrangler/bin/wrangler.js', 'dev', '--port', '3107', '--persist-to', dir, '--var', 'ITQAN_ADMIN_EMAIL:admin@test.example', '--var', `ITQAN_ADMIN_PASSWORD:${password}`]
+  : ['node_modules/next/dist/bin/next', 'dev', '-p', '3107']
+const server = spawn(process.execPath, serverArgs, {
+  env: { ...toolEnv, ITQAN_USE_D1: d1 ? '1' : '0', ITQAN_D1_PERSIST_PATH: join(dir, 'v3'), ITQAN_DATA_DIR: dir, ITQAN_ADMIN_EMAIL: 'admin@test.example', ITQAN_ADMIN_PASSWORD: password }, stdio: ['ignore', 'pipe', 'pipe'],
 })
+const exited = new Promise(resolve => server.once('exit', resolve))
 let output = ''
 server.stdout.on('data', b => { output = (output + b).slice(-4000) })
 server.stderr.on('data', b => { output = (output + b).slice(-4000) })
@@ -24,6 +35,7 @@ async function request(body, cookie = '', expected = 200) {
 }
 try {
   for (let i = 0; i < 90; i++) {
+    if (server.exitCode !== null) throw new Error(output)
     try { await fetch(origin); break } catch { if (i === 89) throw new Error(output); await pause(1000) }
   }
   await request(null, '', 401)
@@ -60,7 +72,9 @@ try {
   await request({ ...schedule, starts: [new Date(Date.now() + 7 * 86400000).toISOString(), start] }, admin.cookie, 400)
   assert.equal((await request(null, admin.cookie)).data.lessons.length, beforeBulk, 'Bulk scheduling rolls back on conflict')
   const liveId = (await request(null, admin.cookie)).data.lessons.find(l => l.status === 'scheduled').id
-  const database = new DatabaseSync(join(dir, 'itqan.sqlite'))
+  const sqliteFile = d1 ? readdirSync(dir, { recursive: true }).find(f => String(f).endsWith('.sqlite') && !String(f).endsWith('metadata.sqlite')) : 'itqan.sqlite'
+  assert.ok(sqliteFile, 'Test database exists')
+  const database = new DatabaseSync(join(dir, String(sqliteFile)))
   database.prepare('UPDATE lessons SET start=? WHERE id=?').run(new Date(Date.now() - 10 * 60000).toISOString(), liveId)
   await request({ action: 'join', id: liveId }, teacher.cookie)
   await request({ action: 'attendance', id: liveId, status: 'attended' }, teacher.cookie)
@@ -70,6 +84,15 @@ try {
   assert.equal((await request(null, admin.cookie)).data.lessons.find(l => l.id === liveId).rate, 120)
   await request({ ...schedule, teacher_id: teacher2.data.user.id, student_id: another.data.user.id, start: new Date(Date.now() + 9 * 86400000).toISOString() }, admin.cookie)
   assert.equal((await request(null, teacher.cookie)).data.lessons.find(l => l.teacher_id === teacher2.data.user.id).rate, undefined, 'Scheduling managers cannot see other teachers pay')
+  const concurrentStart = new Date(Date.now() + 12 * 86400000).toISOString()
+  const concurrent = { ...schedule, teacher_id: teacher2.data.user.id, student_id: another.data.user.id, start: concurrentStart }
+  const concurrentResults = await Promise.all([1, 2].map(async () => (await fetch(origin + '/api/system', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, Cookie: admin.cookie }, body: JSON.stringify(concurrent) })).status))
+  assert.deepEqual(concurrentResults.sort(), [200, 400], 'Concurrent overlapping inserts are serialized by the database constraint')
+  const concurrentLesson = (await request(null, admin.cookie)).data.lessons.find(l => l.start === concurrentStart)
+  const replacementStart = new Date(Date.now() + 13 * 86400000).toISOString()
+  await request({ action: 'postpone', id: concurrentLesson.id, start: replacementStart }, admin.cookie)
+  const postponed = (await request(null, admin.cookie)).data.lessons.find(l => l.id === concurrentLesson.id)
+  assert.equal(postponed.status, 'postponed'); assert.ok(postponed.replaced_by)
   const secondSession = await request({ action: 'login', email: 'teacher@test.example', password })
   await request({ action: 'changePassword', oldPassword: 'wrong', password: 'new-test-password-123' }, teacher.cookie, 400)
   await request({ action: 'changePassword', oldPassword: password, password: 'new-test-password-123' }, teacher.cookie)
@@ -83,10 +106,13 @@ try {
   const half = accounting({ ...base, duration: 30 }, Date.parse('2026-10-01T11:30:00Z'))
   assert.equal(half.minutes, 20); assert.equal(half.earned, 40); assert.equal(half.lateDeduction, 20)
   assert.equal(accounting({ ...base, left_at: '2026-10-01T10:20:00Z' }, Date.parse('2026-10-01T11:30:00Z')).earned, 20)
-  console.log('PASS: roles, privacy, parent linking, schedule conflicts and rollback, attendance, progress, cancellation, pay snapshots, password/session invalidation, logout, and minute accounting')
+  console.log(`PASS (${worker ? 'Workers + D1' : d1 ? 'D1 proxy' : 'SQLite'}): roles, privacy, parent linking, schedule conflicts and concurrency, atomic rollback and postponement, attendance, progress, cancellation, pay snapshots, password/session invalidation, logout, and minute accounting`)
 } catch (error) { console.error(output); throw error }
 finally {
+  if (process.platform === 'win32' && server.exitCode === null && server.signalCode === null) spawnSync('taskkill', ['/PID', String(server.pid), '/T', '/F'], { stdio: 'ignore', timeout: 10000 })
   server.kill()
-  await new Promise(resolve => server.once('exit', resolve))
-  rmSync(dir, { recursive: true, force: true })
+  await Promise.race([exited, pause(5000)])
+  server.stdout.destroy(); server.stderr.destroy(); server.unref()
+  assert.ok(dir.startsWith(join(tmpdir(), 'itqan-test-')), 'Cleanup only the created test directory')
+  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 1000 })
 }

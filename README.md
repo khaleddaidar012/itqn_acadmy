@@ -1,6 +1,6 @@
 # دعيدر للحلول البرمجية | Daidar Solutions
 
-> برنش `fullsystem`: أصبح المشروع يحتوي على نظام أكاديمية إتقان. يتطلب Node.js 24 وخادمًا بقرص دائم؛ تعليمات التشغيل القديمة أدناه تخص الموقع التعريفي. راجع [تقسيم مهام النظام](tasks/fullsystem/README.md) و[إعداد المدير والتشغيل](tasks/fullsystem/SETUP.md). الدخول من `/ar/login` والتسجيل العام للطلاب من `/ar/register`. تكامل الاجتماعات والنشر للإنتاج لم يكتمل بعد.
+> برنش `fullsystem`: أصبح المشروع يحتوي على نظام أكاديمية إتقان. الاستضافة المختارة Cloudflare Workers مع D1؛ راجع [إعداد Cloudflare](tasks/fullsystem/CLOUDFLARE.md)، [تقسيم المهام](tasks/fullsystem/README.md)، و[التشغيل المحلي](tasks/fullsystem/SETUP.md). يتطلب التطوير Node.js 24. تعليمات التشغيل القديمة أدناه تخص الموقع التعريفي. الدخول من `/ar/login` والتسجيل العام للطلاب من `/ar/register`. تكامل الاجتماعات والنشر للإنتاج لم يكتمل بعد.
 
 موقع تعريفي احترافي مبني بـ Next.js 15 + TypeScript + Tailwind CSS.
 

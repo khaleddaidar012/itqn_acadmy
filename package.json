@@ -2,34 +2,45 @@
   "name": "daidar-solutions",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": "24.x" },
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test:system": "node --experimental-strip-types tests/system.mjs",
+    "test:system:d1": "node --experimental-strip-types tests/system.mjs --d1",
+    "test:system:worker": "node --experimental-strip-types tests/system.mjs --worker",
+    "build:cloudflare": "opennextjs-cloudflare build",
+    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cloudflare": "node scripts/check-cloudflare.cjs && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "db:migrate:local": "wrangler d1 migrations apply itqan-academy --local",
+    "db:migrate:remote": "node scripts/check-cloudflare.cjs && wrangler d1 migrations apply itqan-academy --remote",
     "push": "git push -u origin HEAD"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.11",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.11.0",
+    "lucide-react": "^0.460.0",
     "next": "^15.0.0",
+    "rate-limiter-flexible": "^5.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^4.0.0",
-    "framer-motion": "^11.11.0",
-    "lucide-react": "^0.460.0",
-    "clsx": "^2.1.1",
-    "rate-limiter-flexible": "^5.0.3"
+    "wrangler": "^4.150.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.0.0",
-    "typescript": "^5.6.3",
-    "tailwindcss": "^3.4.14",
     "postcss": "^8.4.47",
-    "autoprefixer": "^10.4.20"
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3"
   }
 }

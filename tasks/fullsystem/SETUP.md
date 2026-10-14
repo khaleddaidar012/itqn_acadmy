@@ -1,5 +1,7 @@
 # تشغيل النظام
 
+للاستضافة المختارة Cloudflare Workers + D1 اتبع [CLOUDFLARE.md](CLOUDFLARE.md). الخطوات أدناه للتطوير المحلي باستخدام SQLite أو لخادم Node.js مستقل.
+
 يتطلب Node.js 24 وخادمًا بقرص دائم. أضف إلى `.env.local`:
 
 ```
