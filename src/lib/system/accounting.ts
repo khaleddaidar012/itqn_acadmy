@@ -1,4 +1,4 @@
-export type Lesson = { id: number; teacher_id: number; student_id: number; subject: string; start: string; duration: number; status: string; joined: string | null; left_at: string | null; rate: number; currency: string; note: string; teacher_name?: string; student_name?: string }
+export type Lesson = { id: number; teacher_id: number; student_id: number; subject: string; start: string; duration: number; status: string; joined: string | null; left_at: string | null; rate: number; currency: string; note: string; teacher_attended?: boolean; teacher_name?: string; student_name?: string }
 export function accounting(lesson: Lesson, now = Date.now()) {
   const start = Date.parse(lesson.start)
   const end = start + lesson.duration * 60000

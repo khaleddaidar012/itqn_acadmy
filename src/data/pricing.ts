@@ -7,10 +7,14 @@ export interface PricingPlan {
   nameEn: string
   tierAr: string // الفضية, الذهبية, المميزة
   tierEn: string // Silver, Gold, Premium
-  durationMinutes: number
+  durationMinutes?: number
+  billingPeriod?: 'package'
+  billingMonths?: number
   sessionsPerWeek?: number
   sessionsPerMonth: number
   price: number
+  originalPrice?: number
+  siblingsOnly?: boolean
   currency: Currency
   studentsCount: number
   isPopular?: boolean
@@ -50,7 +54,7 @@ export const PAYMENT_METHODS: Record<Region, PaymentMethodConfig[]> = {
       nameEn: 'Vodafone Cash',
       type: 'vodafone_cash',
       details: {
-        accountOrNumber: '01028791134',
+        accountOrNumber: '01277622042',
         name: 'أكاديمية إتقان',
         notesAr: 'تحويل مباشر لمحفظة فودافون كاش',
         notesEn: 'Direct transfer to Vodafone Cash wallet',
@@ -105,8 +109,8 @@ export const ACADEMY_CONTACT = {
   locationAr: 'دمياط، جمهورية مصر العربية',
   locationEn: 'Damietta, Egypt',
   email: 'academyiqtan3@gmail.com',
-  whatsappNumber: '+201028791134',
-  whatsappRaw: '201028791134',
+  whatsappNumber: '01277622042',
+  whatsappRaw: '201277622042',
   facebookUrl: 'https://www.facebook.com/profile.php?id=61577532029246',
   instagramHandle: 'academy_itqan_quran',
   instagramUrl: 'https://www.instagram.com/academy_itqan_quran',
@@ -398,6 +402,88 @@ export const EGYPT_PROGRAMS: ProgramCategory[] = [
       },
     ],
   },
+
+{
+  "id": "arabic",
+  "titleAr": "دورة اللغة العربية",
+  "titleEn": "Arabic Language Course",
+  "subtitleAr": "دروس فردية للمرحلة الابتدائية — الوقت حسب احتياج الطالب، مع متابعة مستمرة لمستواه",
+  "subtitleEn": "Private primary-school lessons — timing tailored to each student, with continuous progress follow-up",
+  "plans": [
+    {
+      "id": "eg-arabic-primary-4",
+      "nameAr": "4 حصص — لغة عربية",
+      "nameEn": "4 Classes — Arabic",
+      "tierAr": "الفضية",
+      "tierEn": "Silver",
+      "sessionsPerMonth": 4,
+      "price": 500,
+      "currency": "EGP",
+      "studentsCount": 1,
+      "billingPeriod": "package",
+      "featuresAr": [
+        "للطلاب في المرحلة الابتدائية",
+        "حصة فردية لكل طالب",
+        "الوقت يُحدد حسب احتياج الطالب وعدد الحصص المناسب له",
+        "متابعة مستمرة لمستوى الطالب"
+      ],
+      "featuresEn": [
+        "For primary-school students",
+        "Private one-to-one lessons",
+        "Timing is tailored to the student’s needs and suitable class count",
+        "Continuous progress follow-up"
+      ]
+    },
+    {
+      "id": "eg-arabic-primary-8",
+      "nameAr": "8 حصص — لغة عربية",
+      "nameEn": "8 Classes — Arabic",
+      "tierAr": "الذهبية",
+      "tierEn": "Gold",
+      "sessionsPerMonth": 8,
+      "price": 850,
+      "currency": "EGP",
+      "studentsCount": 1,
+      "billingPeriod": "package",
+      "featuresAr": [
+        "للطلاب في المرحلة الابتدائية",
+        "حصة فردية لكل طالب",
+        "الوقت يُحدد حسب احتياج الطالب وعدد الحصص المناسب له",
+        "متابعة مستمرة لمستوى الطالب"
+      ],
+      "featuresEn": [
+        "For primary-school students",
+        "Private one-to-one lessons",
+        "Timing is tailored to the student’s needs and suitable class count",
+        "Continuous progress follow-up"
+      ]
+    },
+    {
+      "id": "eg-arabic-primary-12",
+      "nameAr": "12 حصة — لغة عربية",
+      "nameEn": "12 Classes — Arabic",
+      "tierAr": "المميزة",
+      "tierEn": "Premium",
+      "sessionsPerMonth": 12,
+      "price": 1100,
+      "currency": "EGP",
+      "studentsCount": 1,
+      "billingPeriod": "package",
+      "featuresAr": [
+        "للطلاب في المرحلة الابتدائية",
+        "حصة فردية لكل طالب",
+        "الوقت يُحدد حسب احتياج الطالب وعدد الحصص المناسب له",
+        "متابعة مستمرة لمستوى الطالب"
+      ],
+      "featuresEn": [
+        "For primary-school students",
+        "Private one-to-one lessons",
+        "Timing is tailored to the student’s needs and suitable class count",
+        "Continuous progress follow-up"
+      ]
+    }
+  ]
+},
 ]
 
 // International Pricing (USD)
@@ -426,8 +512,8 @@ export const INTL_PROGRAMS: ProgramCategory[] = [
       },
       {
         id: 'intl-half-2',
-        nameAr: 'باقة النصف ساعة — طالبان',
-        nameEn: 'Half Hour Package — 2 Students',
+        nameAr: "باقة الأخوين — معًا على طريق الإتقان",
+        nameEn: "Two Siblings — Grow Together",
         tierAr: 'الذهبية',
         tierEn: 'Gold',
         isPopular: true,
@@ -437,27 +523,31 @@ export const INTL_PROGRAMS: ProgramCategory[] = [
         price: 64,
         currency: 'USD',
         studentsCount: 2,
-        descriptionAr: 'خصم عائلي للإخوة أو الأصدقاء',
-        descriptionEn: 'Family discount for siblings or friends',
-        featuresAr: ['حصتان أسبوعياً (30 دقيقة)', '8 حصص شهرياً', 'سعر خاص وموفر لطالبين', 'متابعة فردية لكل طالب'],
-        featuresEn: ['2 days per week (30 mins class)', '8 classes monthly', 'Discounted rate for 2 learners', 'Individual progress tracking'],
+        descriptionAr: "رحلة واحدة تجمع أخوين… وتوفير 16 دولارًا كل شهر",
+        descriptionEn: "One shared journey for two siblings — save $16 every month",
+        featuresAr: ["8 حصص شهريًا للمجموعة — حصتان أسبوعيًا","مدة الحصة 30 دقيقة للمجموعة","السعر 64 دولارًا شهريًا للأخوين معًا، وليس لكل طالب","عرض حصري لأخوين يشتركان معًا","متابعة تقدم كل طالب"],
+        featuresEn: ["8 group classes monthly — 2 per week","30 minutes per group class","$64 per month for both siblings, not per student","Exclusively for two siblings enrolling together","Progress tracking for each learner"],
+        originalPrice: 80,
+        siblingsOnly: true,
       },
       {
         id: 'intl-half-3',
-        nameAr: 'باقة النصف ساعة — 3 طلاب',
-        nameEn: 'Half Hour Package — 3 Students',
+        nameAr: "باقة 3 إخوة — إتقان يجمع العائلة",
+        nameEn: "Three Siblings — A Family Journey",
         tierAr: 'المميزة',
         tierEn: 'Premium',
         durationMinutes: 30,
         sessionsPerWeek: 2,
         sessionsPerMonth: 8,
-        price: 120,
+        price: 90,
         currency: 'USD',
         studentsCount: 3,
-        descriptionAr: 'باقة المجموعات العائلية الصغيرة',
-        descriptionEn: 'Small family group package',
-        featuresAr: ['حصتان أسبوعياً (30 دقيقة)', '8 حصص شهرياً', 'مناسبة للعائلات والمجموعات الصغيرة', 'جدول مواعيد منسق'],
-        featuresEn: ['2 days per week (30 mins class)', '8 classes monthly', 'Ideal for family members', 'Synchronized class schedule'],
+        descriptionAr: "قرّبهم من القرآن… ووفر 30 دولارًا كل شهر",
+        descriptionEn: "Bring them closer to the Quran — save $30 every month",
+        featuresAr: ["8 حصص شهريًا للمجموعة — حصتان أسبوعيًا","مدة الحصة 30 دقيقة للمجموعة","السعر 90 دولارًا شهريًا للإخوة الثلاثة معًا","عرض حصري لثلاثة إخوة يشتركون معًا","متابعة تقدم كل طالب"],
+        featuresEn: ["8 group classes monthly — 2 per week","30 minutes per group class","$90 per month for all three siblings together","Exclusively for three siblings enrolling together","Progress tracking for each learner"],
+        originalPrice: 120,
+        siblingsOnly: true,
       },
       {
         id: 'intl-half-promo-3mo',
@@ -466,6 +556,7 @@ export const INTL_PROGRAMS: ProgramCategory[] = [
         tierAr: 'المميزة (عرض خاص)',
         tierEn: 'Special 3-Month Offer',
         durationMinutes: 30,
+        billingMonths: 3,
         sessionsPerWeek: 2,
         sessionsPerMonth: 8,
         price: 28, // $28 per month

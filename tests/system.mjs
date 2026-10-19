@@ -9,7 +9,7 @@ import { accounting } from '../src/lib/system/accounting.ts'
 const dir = mkdtempSync(join(tmpdir(), 'itqan-test-'))
 const origin = 'http://localhost:3107'
 const password = 'test-only-password-12345'
-const toolEnv = { ...process.env, WRANGLER_SEND_METRICS: 'false', CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false', XDG_CONFIG_HOME: join(dir, 'config'), WRANGLER_REGISTRY_PATH: join(dir, 'registry'), WRANGLER_LOG_PATH: join(dir, 'logs') }
+const toolEnv = { ...process.env, PAYMOB_USD_ENABLED: '0', WRANGLER_SEND_METRICS: 'false', CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false', XDG_CONFIG_HOME: join(dir, 'config'), WRANGLER_REGISTRY_PATH: join(dir, 'registry'), WRANGLER_LOG_PATH: join(dir, 'logs') }
 const worker = process.argv.includes('--worker')
 const d1 = worker || process.argv.includes('--d1')
 if (d1) {
@@ -77,10 +77,48 @@ try {
   const beforeBulk = (await request(null, admin.cookie)).data.lessons.length
   await request({ ...schedule, starts: [new Date(Date.now() + 7 * 86400000).toISOString(), start] }, admin.cookie, 400)
   assert.equal((await request(null, admin.cookie)).data.lessons.length, beforeBulk, 'Bulk scheduling rolls back on conflict')
-  const liveId = (await request(null, admin.cookie)).data.lessons.find(l => l.status === 'scheduled').id
+  // Teaching eligibility and teacher excuses require explicit authorized decisions.
+  await request({ action:'createUser', name:'إداري فقط', email:'adminstaff@test.example', password, role:'teacher', accountType:'manager', rate:0, currency:'EGP', permissions:['schedule_manage'] }, admin.cookie)
+  const administrator = await request({action:'login',email:'adminstaff@test.example',password})
+  assert.equal(administrator.data.user.can_teach, 0)
+  await request({...schedule,teacher_id:administrator.data.user.id,start:new Date(Date.now()+20*86400000).toISOString()},admin.cookie,400)
+  const excuseStart = new Date(Date.now()+21*86400000).toISOString()
+  await request({...schedule,start:excuseStart,duration:5},admin.cookie)
+  const excuseLesson = (await request(null,admin.cookie)).data.lessons.find(l=>l.start===excuseStart)
+  await request({action:'requestExcuse',id:excuseLesson.id,comment:'ظرف طارئ'},teacher2.cookie,403)
+  await request({action:'requestExcuse',id:excuseLesson.id,comment:''},teacher.cookie,400)
+  await request({action:'requestExcuse',id:excuseLesson.id,comment:'ظرف طارئ'},teacher.cookie)
+  let excuse = (await request(null,admin.cookie)).data.excuses.find(e=>e.lesson_id===excuseLesson.id)
+  assert.equal((await request(null,student.cookie)).data.excuses.length,0)
+  await request({action:'reviewExcuse',id:excuse.id,status:'accepted'},teacher.cookie,403)
+  await request({action:'reviewExcuse',id:excuse.id,status:'rejected'},administrator.cookie)
+  assert.equal((await request(null,admin.cookie)).data.lessons.find(l=>l.id===excuseLesson.id).status,'scheduled')
+  await request({action:'requestExcuse',id:excuseLesson.id,comment:'طلب جديد'},teacher.cookie)
+  excuse = (await request(null,admin.cookie)).data.excuses.find(e=>e.lesson_id===excuseLesson.id&&e.status==='pending')
+  await request({action:'reviewExcuse',id:excuse.id,status:'accepted'},administrator.cookie)
+  await request({action:'reviewExcuse',id:excuse.id,status:'rejected'},admin.cookie,400)
+  assert.equal((await request(null,admin.cookie)).data.lessons.find(l=>l.id===excuseLesson.id).status,'postponed')
+  await request({...schedule,teacher_id:teacher2.data.user.id,student_id:another.data.user.id,start:excuseStart,duration:5},admin.cookie)
+  await request({action:'assignExcuse',id:excuse.id,teacher_id:teacher2.data.user.id},admin.cookie,400)
+  assert.equal((await request(null,admin.cookie)).data.excuses.find(e=>e.id===excuse.id).status,'accepted')
+  await request({action:'assignExcuse',id:excuse.id,teacher_id:teacher2.data.user.id,start:new Date(Date.parse(excuseStart)+3600000).toISOString()},administrator.cookie)
+  assert.equal((await request(null,admin.cookie)).data.excuses.find(e=>e.id===excuse.id).status,'assigned')
+  await request({action:'assignExcuse',id:excuse.id,teacher_id:teacher2.data.user.id},admin.cookie,400)
+  const liveId = (await request(null, admin.cookie)).data.lessons.find(l => l.status === 'scheduled' && l.start === start).id
   const sqliteFile = d1 ? readdirSync(dir, { recursive: true }).find(f => String(f).endsWith('.sqlite') && !String(f).endsWith('metadata.sqlite')) : 'itqan.sqlite'
   assert.ok(sqliteFile, 'Test database exists')
   const database = new DatabaseSync(join(dir, String(sqliteFile)))
+  // Read-only payment visibility and live/test indicators on real database adapters.
+  const paymentApi = async (cookie, suffix='') => { const response=await fetch(origin+'/api/payments'+suffix,{headers:{Cookie:cookie}}); assert.equal(response.status,200); return response.json() }
+  assert.equal((await paymentApi('')).authenticated,false)
+  database.prepare("INSERT INTO payment_orders(id,student_id,request_key,plan_id,plan_name,amount,currency,country,mode,integration_ids,status,created,updated) VALUES(?,?,?,?,?,6400,'USD','US',?,'[123]','paid',?,?)").run('test-payment',student.data.user.id,'test-request','intl-half-2','Test package','test',start,start)
+  assert.equal((await paymentApi(student.cookie)).orders.length,1)
+  assert.equal((await paymentApi(another.cookie,'?order=test-payment')).orders.length,0)
+  assert.equal((await paymentApi(teacher2.cookie)).orders.length,0)
+  assert.equal((await request(null,admin.cookie)).data.users.find(u=>u.id===student.data.user.id).payment_confirmed,0)
+  database.prepare("INSERT INTO payment_orders(id,student_id,request_key,plan_id,plan_name,amount,currency,country,mode,integration_ids,status,created,updated) VALUES(?,?,?,?,?,6400,'USD','US',?,'[123]','paid',?,?)").run('live-payment',student.data.user.id,'live-request','intl-half-2','Live fixture','live',start,start)
+  assert.equal((await request(null,admin.cookie)).data.users.find(u=>u.id===student.data.user.id).payment_confirmed,1)
+  assert.equal((await paymentApi(admin.cookie)).orders.length,2)
   database.prepare('UPDATE lessons SET start=? WHERE id=?').run(new Date(Date.now() - 10 * 60000).toISOString(), liveId)
   await request({ action: 'join', id: liveId }, teacher.cookie)
   await request({ action: 'attendance', id: liveId, status: 'attended' }, teacher.cookie)

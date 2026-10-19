@@ -1,4 +1,6 @@
 export const PERMISSIONS = [
+  { key: 'reports_manage', label: 'إعداد ومشاركة تقارير الطلاب لولي الأمر' },
+  { key: 'backups_manage', label: 'إدارة وتنزيل النسخ الاحتياطية الكاملة للأكاديمية' },
   { key: 'staff_create', label: 'إضافة معلمين وموظفين' },
   { key: 'staff_edit', label: 'تعديل بيانات المعلمين' },
   { key: 'staff_delete', label: 'حذف المعلمين وإيقاف حساباتهم' },

@@ -7,7 +7,7 @@ Implement:
 3. On click, opens official WhatsApp with the formatted, URL-encoded message containing all subscription details.
 
 ## Official Academy WhatsApp
-- Number: `+201028791134` (Vodafone Cash & confirmed mobile)
+- Number: `+201277622042` (Vodafone Cash & confirmed mobile)
 
 ## Subtasks
 - [ ] Implement robust 120-second countdown timer hook/component

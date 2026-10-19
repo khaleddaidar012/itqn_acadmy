@@ -6,6 +6,7 @@ import { getTranslations } from '@/locales'
 import { ACADEMY_CONTACT, PAYMENT_METHODS } from '@/data/pricing'
 import type { PricingPlan, Region } from '@/data/pricing'
 import type { Locale } from '@/types'
+import PaymobCheckout from './PaymobCheckout'
 
 interface CheckoutModalProps {
   plan: PricingPlan | null
@@ -26,6 +27,20 @@ export function CheckoutModal({
   locale,
   onClose,
 }: CheckoutModalProps) {
+  const [quote, setQuote] = useState<PricingPlan | null>(null)
+  const [quoteError, setQuoteError] = useState(false)
+  useEffect(() => {
+    setQuote(null); setQuoteError(false)
+    if (!plan) return
+    const controller = new AbortController(); let active=true
+    fetch('/api/market', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({plan_id:plan.id}), cache:'no-store', signal:controller.signal }).then(async response=>{
+      if (!response.ok) throw new Error('Unavailable')
+      const data = await response.json()
+      if (data.region !== region || data.plan.id !== plan.id || data.plan.price !== plan.price || data.plan.currency !== plan.currency) throw new Error('Market changed')
+      if(active) setQuote(data.plan)
+    }).catch(()=>{if(active) setQuoteError(true)})
+    return ()=>{active=false;controller.abort()}
+  },[plan,region])
   const t = getTranslations(locale)
   const isRTL = locale === 'ar'
 
@@ -85,6 +100,9 @@ export function CheckoutModal({
   }, [timerActive, secondsLeft])
 
   if (!plan) return null
+  if (!quote || quote.id !== plan.id) return <div role="dialog" aria-modal="true" className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4"><div className="bg-white dark:bg-brand-900 rounded-2xl p-8 max-w-md text-center"><p>{quoteError ? (locale === 'ar' ? 'تعذر تأكيد الباقة لبلد اتصالك. أغلق النافذة وحدّث الأسعار ثم حاول مرة أخرى.' : 'Unable to verify this package for your country. Close and refresh pricing.') : (locale === 'ar' ? 'جارٍ تأكيد السعر والعملة لبلدك…' : 'Verifying your price and currency…')}</p><button onClick={onClose} className="mt-5 rounded-lg border px-4 py-2">{locale === 'ar' ? 'إغلاق' : 'Close'}</button></div></div>
+
+  if (region === 'INTL') return <PaymobCheckout key={plan.id} plan={quote} locale={locale} onClose={onClose} />
 
   function handleStartTimer() {
     setTimerActive(true)
@@ -116,10 +134,10 @@ export function CheckoutModal({
   function handleSendWhatsApp() {
     const isArabic = locale === 'ar'
     const programName = isArabic ? programTitle : programTitle
-    const packageName = isArabic ? plan!.nameAr : plan!.nameEn
+    const packageName = (isArabic ? plan!.nameAr : plan!.nameEn) + (plan!.siblingsOnly ? (isArabic ? ' — للإخوة فقط، السعر للمجموعة كاملة' : ' — siblings only, total group price') : '')
     const students = plan!.studentsCount
-    const duration = `${plan!.durationMinutes} ${isArabic ? 'دقيقة' : 'mins'}`
-    const sessions = `${plan!.sessionsPerMonth} ${isArabic ? 'حصص شهرياً' : 'monthly classes'}`
+    const duration = plan!.durationMinutes ? `${plan!.durationMinutes} ${isArabic ? 'دقيقة' : 'mins'}` : (isArabic ? 'حسب احتياج الطالب — بالتنسيق مع الأكاديمية' : 'Tailored to the student — arranged with the academy')
+    const sessions = `${plan!.sessionsPerMonth} ${plan!.siblingsOnly ? (isArabic ? 'حصص شهريًا للمجموعة' : 'monthly group classes') : plan!.billingPeriod === 'package' ? (isArabic ? 'حصص في الباقة' : 'classes per package') : (isArabic ? 'حصص شهرياً' : 'monthly classes')}`
     const amount = `${plan!.price}`
     const currency = isArabic ? (plan!.currency === 'EGP' ? 'جنيه مصري' : 'دولار أمريكي') : plan!.currency
     const methodName = isArabic ? activeMethodConfig.nameAr : activeMethodConfig.nameEn
@@ -199,12 +217,13 @@ Thank you.`
               <span className="text-charcoal-800/60 dark:text-cream-200/60 block">{t.checkout.packageName}</span>
               <span className="font-bold text-brand-900 dark:text-cream-100">
                 {locale === 'ar' ? plan.nameAr : plan.nameEn}
+                {plan.siblingsOnly && <small className="block mt-1 text-brand-700 dark:text-gold-300">{locale === 'ar' ? 'للإخوة فقط — السعر للمجموعة كاملة' : 'Siblings only — total group price'}</small>}
               </span>
             </div>
             <div>
               <span className="text-charcoal-800/60 dark:text-cream-200/60 block">{t.checkout.duration}</span>
               <span className="font-bold text-brand-900 dark:text-cream-100">
-                {plan.durationMinutes} {t.pricing.minutesUnit}
+                {plan.durationMinutes ? `${plan.durationMinutes} ${t.pricing.minutesUnit}` : locale === 'ar' ? 'حسب احتياج الطالب' : 'Tailored to the student'}
               </span>
             </div>
             <div>

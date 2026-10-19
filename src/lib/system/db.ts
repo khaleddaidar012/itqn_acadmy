@@ -2,7 +2,10 @@ import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypt
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { schema } from './schema'
 import { staffRules } from './staff-rules'
-export type User = { id: number; name: string; email: string; role: 'admin' | 'teacher' | 'student' | 'parent'; manage: number; rate: number; currency: string; subjects: string; parent_id: number | null; pages: number; permissions?: string | null; disabled?: number; enrollment_status?: 'pending' | 'active' }
+import { excuseSchema } from './excuse-schema'
+import { paymentSchema } from '@/lib/payments/schema'
+import { servicesSchema } from './services-schema'
+export type User = { id: number; name: string; email: string; role: 'admin' | 'teacher' | 'student' | 'parent'; manage: number; can_teach?: number; rate: number; currency: string; subjects: string; parent_id: number | null; pages: number; permissions?: string | null; disabled?: number; payment_confirmed?: number; enrollment_status?: 'pending' | 'active' }
 type Value = string | number | null
 type Row = Record<string, Value>
 export type Query = { sql: string; values: Value[] }
@@ -30,7 +33,10 @@ async function connection(): Promise<LocalDatabase | D1Database> {
     if (!columns.has('permissions')) database.exec('ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL')
     if (!columns.has('disabled')) database.exec('ALTER TABLE users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0')
     if (!columns.has('enrollment_status')) database.exec("ALTER TABLE users ADD COLUMN enrollment_status TEXT NOT NULL DEFAULT 'active' CHECK(enrollment_status IN ('pending','active'))")
-    database.exec(staffRules)
+    if (!columns.has('can_teach')) {
+      database.exec("ALTER TABLE users ADD COLUMN can_teach INTEGER NOT NULL DEFAULT 1 CHECK(can_teach IN (0,1)); UPDATE users SET can_teach=0 WHERE role='teacher' AND manage=1 AND rate=0 AND id NOT IN (SELECT teacher_id FROM lessons)")
+    }
+    database.exec(staffRules + excuseSchema + paymentSchema + servicesSchema)
     return database
   })()
   return local
@@ -38,6 +44,17 @@ async function connection(): Promise<LocalDatabase | D1Database> {
 const isD1 = (database: LocalDatabase | D1Database): database is D1Database => 'batch' in database
 export function db() {
   return {
+    async snapshot(tables: readonly string[]): Promise<Record<string, Row[]>> {
+      if (tables.some(t => !/^[a-z_]+$/.test(t))) throw new Error('Invalid table')
+      const database = await connection()
+      if (isD1(database)) {
+        const results = await database.batch(tables.map(t => database.prepare(`SELECT * FROM ${t}`))) as { results: Row[] }[]
+        return Object.fromEntries(tables.map((t, i) => [t, results[i].results]))
+      }
+      database.exec('BEGIN')
+      try { const result = Object.fromEntries(tables.map(t => [t, database.prepare(`SELECT * FROM ${t}`).all() as Row[]])); database.exec('COMMIT'); return result }
+      catch (error) { database.exec('ROLLBACK'); throw error }
+    },
     prepare(sql: string) {
       return {
         async get(...values: Value[]): Promise<Row | undefined> {
@@ -84,7 +101,7 @@ export async function bootstrapAdmin() {
   if (await db().prepare("SELECT id FROM users WHERE role='admin'").get()) return
   await db().prepare("INSERT INTO users(name,email,password,role,manage) SELECT ?,?,?,'admin',1 WHERE NOT EXISTS (SELECT 1 FROM users WHERE role='admin')").run(process.env.ITQAN_ADMIN_NAME || 'مدير الأكاديمية', email, hashPassword(password))
 }
-export const safeUser = async (id: number) => await db().prepare('SELECT id,name,email,role,manage,rate,currency,subjects,parent_id,pages,permissions,disabled,enrollment_status FROM users WHERE id=?').get(id) as User | undefined
+export const safeUser = async (id: number) => await db().prepare('SELECT id,name,email,role,manage,can_teach,rate,currency,subjects,parent_id,pages,permissions,disabled,enrollment_status FROM users WHERE id=?').get(id) as User | undefined
 export async function rateLimit(key: string) {
   const now = Date.now()
   await db().prepare('DELETE FROM attempts WHERE expires < ?').run(now)

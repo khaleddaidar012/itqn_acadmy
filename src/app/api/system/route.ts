@@ -24,11 +24,11 @@ async function canSee(user: User, lesson: Lesson) {
 }
 async function scheduleQuery(input: Record<string, unknown>): Promise<Query> {
   const teacher = await safeUser(number(input.teacher_id, 1, 1e9)); const student = await safeUser(number(input.student_id, 1, 1e9))
-  if (teacher?.role !== 'teacher' || teacher.disabled || student?.role !== 'student' || student.disabled) fail('اختر معلمًا وطالبًا صحيحين')
+  if (teacher?.role !== 'teacher' || teacher.can_teach !== 1 || teacher.disabled || student?.role !== 'student' || student.disabled) fail('اختر معلمًا وطالبًا صحيحين')
   if (student.enrollment_status !== 'active') fail('يجب تأكيد حساب الطالب قبل تعيين حصصه')
   const subject = str(input.subject)
   if (!subjects.includes(subject) || !JSON.parse(student.subjects).includes(subject)) fail('المادة ليست من مواد الطالب')
-  const startMs = Date.parse(str(input.start)); const duration = number(input.duration, 15, 180)
+  const startMs = Date.parse(str(input.start)); const duration = number(input.duration, 5, 180)
   if (!Number.isInteger(duration) || !Number.isFinite(startMs) || startMs < Date.now()) fail('اختر موعدًا مستقبليًا ومدة صحيحة')
   const start = new Date(startMs).toISOString()
   return { sql: 'INSERT INTO lessons(teacher_id,student_id,subject,start,duration,rate,currency) SELECT id,?,?,?,?,rate,currency FROM users WHERE id=?', values: [student.id, subject, start, duration, teacher.id] }
@@ -37,31 +37,32 @@ export async function GET() {
   try {
     const user = await currentUser(); if (!user) fail('سجّل الدخول أولًا', 401)
     const users = user.role === 'admin' || allowed(user, 'students_manage')
-      ? await db().prepare('SELECT id,name,email,role,manage,subjects,parent_id,pages,permissions,disabled,enrollment_status FROM users WHERE disabled=0 ORDER BY id DESC').all()
-      : manager(user) ? await db().prepare("SELECT id,name,role,manage,subjects,pages,enrollment_status FROM users WHERE disabled=0 AND role IN ('student','teacher') AND (role!='student' OR enrollment_status='active')").all()
+      ? await db().prepare("SELECT id,name,email,role,manage,can_teach,subjects,parent_id,pages,permissions,disabled,enrollment_status,EXISTS(SELECT 1 FROM payment_orders p WHERE p.student_id=users.id AND p.mode='live' AND p.status='paid') AS payment_confirmed FROM users WHERE disabled=0 ORDER BY id DESC").all()
+      : manager(user) || allowed(user, 'reports_manage') ? await db().prepare("SELECT id,name,role,manage,can_teach,subjects,pages,enrollment_status FROM users WHERE disabled=0 AND role IN ('student','teacher') AND (role!='student' OR enrollment_status='active')").all()
       : user.role === 'parent' ? await db().prepare("SELECT id,name,role,pages,subjects,enrollment_status FROM users WHERE parent_id=? AND disabled=0 AND enrollment_status='active'").all(user.id)
-      : user.role === 'teacher' ? await db().prepare('SELECT id,name,role,pages,subjects FROM users WHERE id=? OR id IN (SELECT student_id FROM lessons WHERE teacher_id=?)').all(user.id, user.id)
+      : user.role === 'teacher' ? await db().prepare('SELECT id,name,role,can_teach,pages,subjects,enrollment_status FROM users WHERE id=? OR id IN (SELECT student_id FROM lessons WHERE teacher_id=?)').all(user.id, user.id)
       : [await safeUser(user.id)]
     const all = await db().prepare('SELECT l.*,t.name AS teacher_name,s.name AS student_name FROM lessons l JOIN users t ON t.id=l.teacher_id JOIN users s ON s.id=l.student_id ORDER BY l.start DESC').all() as unknown as Lesson[]
     const studentIds = new Set(users.filter(u => u?.role === 'student').map(u => Number(u?.id)))
     const lessons = all.filter(l => manager(user) || user.role === 'teacher' && l.teacher_id === user.id || user.role === 'student' && l.student_id === user.id || user.role === 'parent' && studentIds.has(l.student_id)).map(l => {
-      if (user.role === 'admin' || user.role === 'teacher' && l.teacher_id === user.id) return { ...l, ...accounting(l) }
+      if (user.role === 'admin' || user.role === 'teacher' && l.teacher_id === user.id) return { ...l, teacher_attended: !!l.joined, ...accounting(l) }
       if (manager(user)) {
         const { rate, currency, joined, left_at, ...visible } = l
-        return { ...visible, ...(allowed(user, 'pay_view') ? { rate, currency } : {}), ...(allowed(user, 'hours_view') ? { minutes: accounting(l).minutes } : {}) }
+        return { ...visible, teacher_attended: !!l.joined, ...(allowed(user, 'pay_view') ? { rate, currency } : {}), ...(allowed(user, 'hours_view') ? { minutes: accounting(l).minutes } : {}) }
       }
       const { rate: _rate, currency: _currency, joined: _joined, left_at: _left, ...visible } = l
-      return visible
+      return { ...visible, teacher_attended: !!l.joined }
     })
     const progress = (await db().prepare('SELECT p.*,t.name AS teacher_name FROM progress p JOIN users t ON t.id=p.teacher_id ORDER BY p.created DESC').all()).filter(p => manager(user) || (user.role === 'teacher' && p.teacher_id === user.id) || (user.role === 'student' && p.student_id === user.id) || (user.role === 'parent' && studentIds.has(Number(p.student_id))))
     const canStaff = ['staff_create', 'staff_edit', 'staff_delete', 'pay_view', 'hours_view'].some(p => allowed(user, p as Permission))
-    const staff = canStaff ? (await db().prepare("SELECT id,name,email,rate,currency,manage,permissions,disabled FROM users WHERE role='teacher' AND disabled=0").all()).map(t => {
+    const staff = canStaff ? (await db().prepare("SELECT id,name,email,role,rate,currency,manage,can_teach,permissions,disabled FROM users WHERE role='teacher' AND disabled=0").all()).map(t => {
       const { rate, currency, permissions, email, ...visible } = t
       return { ...visible, ...(allowed(user, 'staff_edit') || allowed(user, 'staff_create') ? { email } : {}), ...(user.role === 'admin' ? { permissions } : {}), ...(allowed(user, 'pay_view') ? { rate, currency } : {}) }
     }) : []
     const reports = allowed(user, 'hours_view') ? all.map(l => ({ teacher_id: l.teacher_id, start: l.start, joined: !!l.joined, minutes: accounting(l).minutes, ...(allowed(user, 'pay_view') ? { earned: accounting(l).earned, currency: l.currency } : {}) })) : []
+    const excuses = user.role === 'teacher' || user.role === 'admin' ? (await db().prepare('SELECT e.*,l.student_id,l.subject,l.start,l.duration,t.name AS teacher_name,s.name AS student_name FROM teacher_excuses e JOIN lessons l ON l.id=e.lesson_id JOIN users t ON t.id=e.teacher_id JOIN users s ON s.id=l.student_id ORDER BY e.created DESC').all()).filter(e => allowed(user, 'schedule_manage') || e.teacher_id === user.id) : []
     const pending = user.role === 'student' && user.enrollment_status !== 'active'
-    return NextResponse.json({ user, users, staff, lessons: pending ? [] : lessons, progress: pending ? [] : progress, reports, now: new Date().toISOString(), cancelHours: Number(process.env.ITQAN_CANCEL_HOURS) || 12 }, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ user, users, staff, lessons: pending ? [] : lessons, progress: pending ? [] : progress, reports, excuses, now: new Date().toISOString(), cancelHours: Number(process.env.ITQAN_CANCEL_HOURS) || 12 }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) { return errorResponse(error) }
 }
 function errorResponse(error: unknown) {
@@ -117,19 +118,20 @@ export async function POST(request: NextRequest) {
       if (!allowed(user, 'pay_view') && Number(body.rate || 0) !== 0) fail('تحديد الأجر يحتاج صلاحية رؤية سعر الساعة', 403)
       const currency = str(body.currency); if (!['USD', 'EGP'].includes(currency)) fail('العملة غير صحيحة')
       const permissions = role === 'teacher' && user.role === 'admin' ? body.permissions !== undefined ? permissionList(body.permissions) : body.manage === true ? DEFAULT_MANAGER : [] : []
-      await db().prepare('INSERT INTO users(name,email,password,role,rate,currency,manage,permissions) VALUES(?,?,?,?,?,?,?,?)').run(name, email, hashPassword(password), role, rate, currency, permissions.length ? 1 : 0, JSON.stringify(permissions))
+      await db().prepare('INSERT INTO users(name,email,password,role,rate,currency,manage,permissions,can_teach) VALUES(?,?,?,?,?,?,?,?,?)').run(name, email, hashPassword(password), role, rate, currency, permissions.length ? 1 : 0, JSON.stringify(permissions), body.accountType === 'manager' && user.role === 'admin' ? 0 : 1)
     } else if (action === 'updateTeacher') {
       if (!allowed(user, 'staff_edit')) fail('لا تملك صلاحية تعديل المعلمين', 403)
       const teacher = await safeUser(number(body.id, 1, 1e9)); if (teacher?.role !== 'teacher') fail('المعلم غير موجود')
-      if (user.role !== 'admin' && (body.permissions !== undefined || body.manage !== undefined)) fail('منح الصلاحيات للأدمن فقط', 403)
+      if (user.role !== 'admin' && (body.permissions !== undefined || body.manage !== undefined || body.can_teach !== undefined)) fail('منح الصلاحيات للأدمن فقط', 403)
       if (!allowed(user, 'pay_view') && (body.rate !== undefined || body.currency !== undefined)) fail('تعديل الأجر يحتاج صلاحية رؤية سعر الساعة', 403)
       const currency = body.currency !== undefined ? str(body.currency) : teacher.currency; if (!['USD', 'EGP'].includes(currency)) fail('العملة غير صحيحة')
       const name = body.name !== undefined ? str(body.name, 100) : teacher.name
       const email = body.email !== undefined ? str(body.email, 254).toLowerCase() : teacher.email
       if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail('الاسم أو البريد غير صحيح')
       const duplicate = await db().prepare('SELECT id FROM users WHERE email=? AND id<>?').get(email, teacher.id); if (duplicate) fail('البريد مستخدم بالفعل')
+      if (body.can_teach !== undefined && !['0','1'].includes(String(body.can_teach))) fail('وظيفة الحساب غير صحيحة')
       const permissions = user.role === 'admin' && body.permissions !== undefined ? permissionList(body.permissions) : user.role === 'admin' && body.manage !== undefined ? body.manage ? DEFAULT_MANAGER : [] : grants(teacher)
-      await db().prepare('UPDATE users SET name=?,email=?,rate=?,currency=?,manage=?,permissions=? WHERE id=?').run(name, email, body.rate !== undefined ? number(body.rate, 0, 100000) : teacher.rate, currency, permissions.length ? 1 : 0, JSON.stringify(permissions), teacher.id)
+      await db().prepare('UPDATE users SET name=?,email=?,rate=?,currency=?,manage=?,permissions=?,can_teach=? WHERE id=?').run(name, email, body.rate !== undefined ? number(body.rate, 0, 100000) : teacher.rate, currency, permissions.length ? 1 : 0, JSON.stringify(permissions), user.role === 'admin' && body.can_teach !== undefined ? String(body.can_teach) === '1' ? 1 : 0 : teacher.can_teach ?? 1, teacher.id)
     } else if (action === 'deleteTeacher') {
       if (!allowed(user, 'staff_delete')) fail('لا تملك صلاحية حذف المعلمين', 403)
       const teacher = await safeUser(number(body.id, 1, 1e9))
@@ -207,6 +209,29 @@ export async function POST(request: NextRequest) {
       if (!['scheduled', 'attended', 'absent'].includes(lesson.status) || Date.now() < Date.parse(lesson.start)) fail('لا يمكن تعديل حضور هذه الحصة')
       const status = str(body.status); if (!['attended', 'absent'].includes(status)) fail('الحالة غير صحيحة')
       await db().prepare('UPDATE lessons SET status=? WHERE id=?').run(status, lesson.id)
+    } else if (action === 'requestExcuse') {
+      const lesson = await lessonById(body.id)
+      if (user.role !== 'teacher' || user.can_teach !== 1 || lesson.teacher_id !== user.id) fail('الاعتذار لمعلم الحصة فقط', 403)
+      if (lesson.status !== 'scheduled' || lesson.joined || Date.parse(lesson.start) <= Date.now()) fail('الاعتذار متاح قبل بداية الحصة فقط')
+      const comment = str(body.comment, 2000); if (!comment) fail('اكتب سبب الاعتذار')
+      if (await db().prepare("SELECT id FROM teacher_excuses WHERE lesson_id=? AND status IN ('pending','accepted')").get(lesson.id)) fail('يوجد طلب اعتذار للحصة بالفعل')
+      await db().prepare('INSERT INTO teacher_excuses(lesson_id,teacher_id,comment,created) VALUES(?,?,?,?)').run(lesson.id, user.id, comment, new Date().toISOString())
+    } else if (action === 'reviewExcuse') {
+      if (!allowed(user, 'schedule_manage')) fail('مراجعة الاعتذار لمسؤول الجداول أو الأدمن فقط', 403)
+      const id = number(body.id, 1, 1e9); const request = await db().prepare('SELECT * FROM teacher_excuses WHERE id=?').get(id)
+      if (!request || request.status !== 'pending') fail('الطلب غير متاح للمراجعة')
+      const status = str(body.status); if (!['accepted','rejected'].includes(status)) fail('قرار غير صحيح')
+      const queries: Query[] = [{sql:'UPDATE teacher_excuses SET status=?,reviewed_by=?,reviewed_at=? WHERE id=?',values:[status,user.id,new Date().toISOString(),id]}]
+      if (status === 'accepted') queries.push({sql:"UPDATE lessons SET status='postponed' WHERE id=?",values:[Number(request.lesson_id)]})
+      await db().batch(queries)
+    } else if (action === 'assignExcuse') {
+      if (!allowed(user, 'schedule_manage')) fail('تعيين البديل لمسؤول الجداول أو الأدمن فقط', 403)
+      const id = number(body.id, 1, 1e9); const request = await db().prepare('SELECT * FROM teacher_excuses WHERE id=?').get(id)
+      if (!request || request.status !== 'accepted') fail('الحصة ليست بحاجة للتعيين')
+      const lesson = await lessonById(request.lesson_id)
+      const teacherId = number(body.teacher_id, 1, 1e9); if (teacherId === Number(request.teacher_id)) fail('اختر معلمًا بديلًا')
+      const insert = await scheduleQuery({teacher_id:teacherId,student_id:lesson.student_id,subject:lesson.subject,start:body.start || lesson.start,duration:lesson.duration})
+      await db().batch([insert,{sql:"UPDATE teacher_excuses SET status='assigned',replacement_id=(SELECT MAX(id) FROM lessons) WHERE id=?",values:[id]},{sql:'UPDATE lessons SET replaced_by=(SELECT replacement_id FROM teacher_excuses WHERE id=?) WHERE id=?',values:[id,lesson.id]}])
     } else if (action === 'progress') {
       const lesson = await lessonById(body.id)
       if (user.role !== 'teacher' || lesson.teacher_id !== user.id) fail('توثيق التقدم لمعلم الحصة فقط', 403)

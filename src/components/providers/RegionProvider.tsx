@@ -1,91 +1,31 @@
 'use client'
-
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import type { Region, Currency } from '@/data/pricing'
-
-interface RegionContextType {
-  region: Region
-  currency: Currency
-  isLoaded: boolean
-  toggleRegion: () => void
-}
-
-const RegionContext = createContext<RegionContextType>({
-  region: 'INTL',
-  currency: 'USD',
-  isLoaded: false,
-  toggleRegion: () => {},
-})
-
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import type { Region, Currency, ProgramCategory } from '@/data/pricing'
+type Market = { region: Region; currency: Currency; country: string; locale: 'ar' | 'en'; programs: ProgramCategory[] }
+interface RegionContextType { region: Region; currency: Currency; isLoaded: boolean; programs: ProgramCategory[]; error: boolean; retry: () => void }
+const RegionContext = createContext<RegionContextType>({region:'INTL',currency:'USD',isLoaded:false,programs:[],error:false,retry:()=>{}})
 export function RegionProvider({ children }: { children: React.ReactNode }) {
-  // Default to INTL until detection completes — prevents EGP flash for non-EG users
-  const [region, setRegionState] = useState<Region>('INTL')
-  const [isLoaded, setIsLoaded] = useState(false)
-
+  const [market,setMarket] = useState<Market>(); const [error,setError] = useState(false); const [attempt,setAttempt] = useState(0)
+  const router = useRouter(); const pathname = usePathname()
+  const retry = useCallback(() => setAttempt(n=>n+1), [])
   useEffect(() => {
-    let isCancelled = false
-
-    async function detectCountry() {
-      try {
-        // ── Step 1: fast timezone heuristic ──────────────────────────────────
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
-        const isEgyptTZ = timeZone.includes('Cairo') || timeZone.includes('Egypt')
-
-        // ── Step 2: IP geo lookup (2-second timeout) ─────────────────────────
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), 2000)
-
-        let countryCode: string | null = null
-
-        try {
-          const res = await fetch('https://ipapi.co/json/', {
-            signal: controller.signal,
-            headers: { Accept: 'application/json' },
-          })
-          clearTimeout(timer)
-
-          if (res.ok) {
-            const data = await res.json()
-            countryCode = data?.country_code ?? null
-          }
-        } catch {
-          clearTimeout(timer)
-        }
-
-        if (isCancelled) return
-
-        if (countryCode !== null) {
-          // Geo-lookup succeeded — use authoritative result
-          setRegionState(countryCode === 'EG' ? 'EG' : 'INTL')
-        } else {
-          // Geo-lookup failed — fall back to timezone heuristic; default INTL
-          setRegionState(isEgyptTZ ? 'EG' : 'INTL')
-        }
-      } catch {
-        // All detection failed — safe default: INTL
-        if (!isCancelled) setRegionState('INTL')
-      } finally {
-        if (!isCancelled) setIsLoaded(true)
-      }
-    }
-
-    detectCountry()
-    return () => { isCancelled = true }
-  }, [])
-
-  const currency: Currency = region === 'EG' ? 'EGP' : 'USD'
-
-  function toggleRegion() {
-    setRegionState((prev) => (prev === 'EG' ? 'INTL' : 'EG'))
-  }
-
-  return (
-    <RegionContext.Provider value={{ region, currency, isLoaded, toggleRegion }}>
-      {children}
-    </RegionContext.Provider>
-  )
+    const controller = new AbortController(); const timeout = setTimeout(()=>controller.abort(),10000); let active=true
+    setMarket(undefined); setError(false)
+    fetch('/api/market',{cache:'no-store',signal:controller.signal}).then(async response => {
+      if (!response.ok) throw new Error('Unavailable')
+      const data: Market = await response.json()
+      if (!['EG','INTL'].includes(data.region) || !Array.isArray(data.programs)) throw new Error('Invalid market')
+      if (active) setMarket(data)
+    }).catch(()=>{if(active) setError(true)}).finally(()=>clearTimeout(timeout))
+    return ()=>{active=false;clearTimeout(timeout);controller.abort()}
+  },[attempt])
+  useEffect(()=>{
+    if (!market) return
+    const preference = document.cookie.split('; ').find(c=>c.startsWith('itqan_language='))?.split('=')[1]
+    const language = preference === 'ar' || preference === 'en' ? preference : market.locale
+    if (/^\/(ar|en)(\/|$)/.test(pathname) && pathname.split('/')[1] !== language) router.replace(pathname.replace(/^\/(ar|en)(?=\/|$)/, '/'+language)+window.location.search+window.location.hash)
+  },[market,pathname,router])
+  return <RegionContext.Provider value={{ region:market?.region || 'INTL', currency:market?.currency || 'USD', programs:market?.programs || [], isLoaded:!!market, error, retry }}>{children}</RegionContext.Provider>
 }
-
-export function useRegion() {
-  return useContext(RegionContext)
-}
+export const useRegion = () => useContext(RegionContext)

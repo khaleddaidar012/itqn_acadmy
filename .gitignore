@@ -40,3 +40,10 @@ yarn-error.log*
 .dev.vars
 .dev.vars.*
 /.local/
+
+# Separate advertising demo copy
+/جينيرال/
+
+# Local generated artifacts and dashboard captures
+/output/
+/tasks/fullsystem/screenshots/

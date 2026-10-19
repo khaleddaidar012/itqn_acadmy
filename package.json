@@ -18,12 +18,16 @@
     "deploy:cloudflare": "node scripts/check-cloudflare.cjs && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "db:migrate:local": "wrangler d1 migrations apply itqan-academy --local",
     "db:migrate:remote": "node scripts/check-cloudflare.cjs && wrangler d1 migrations apply itqan-academy --remote",
-    "push": "git push -u origin HEAD"
+    "push": "git push -u origin HEAD",
+    "test:payments": "node tests/payments.mjs",
+    "test:services": "node tests/services.mjs",
+    "test:services:worker": "node tests/services.mjs --worker"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.11",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.0",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.460.0",
     "next": "^15.0.0",
     "rate-limiter-flexible": "^5.0.3",

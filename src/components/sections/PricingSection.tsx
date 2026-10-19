@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Sparkles, Check, Clock, Users, Calendar, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 import { getTranslations } from '@/locales'
 import { useRegion } from '@/components/providers/RegionProvider'
-import { EGYPT_PROGRAMS, INTL_PROGRAMS } from '@/data/pricing'
 import { CheckoutModal } from '@/components/checkout/CheckoutModal'
 import type { PricingPlan, ProgramCategory } from '@/data/pricing'
 import type { Locale } from '@/types'
@@ -28,20 +27,20 @@ function usePrefersMotion() {
 
 export function PricingSection({ locale }: PricingSectionProps) {
   const t = getTranslations(locale)
-  const { region, isLoaded } = useRegion()
+  const { region, isLoaded, programs, error: regionError, retry } = useRegion()
   const isRTL = locale === 'ar'
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight
   const prefersMotion = usePrefersMotion()
 
   // ── Categories ────────────────────────────────────────────────────────────
-  const categories: ProgramCategory[] = region === 'EG' ? EGYPT_PROGRAMS : INTL_PROGRAMS
+  const categories: ProgramCategory[] = programs
   const [activeCategoryId, setActiveCategoryId] = useState<string>('')
   const currentCategory =
     categories.find((c) => c.id === activeCategoryId) || categories[0]
 
   // ── Duration — default to 30 minutes ─────────────────────────────────────
   const availableDurations = Array.from(
-    new Set(currentCategory?.plans.map((p) => p.durationMinutes) || [])
+    new Set(currentCategory?.plans.map((p) => p.durationMinutes).filter((d): d is number => typeof d === 'number') || [])
   ).sort((a, b) => a - b)
 
   const getInitialDuration = useCallback(
@@ -61,7 +60,7 @@ export function PricingSection({ locale }: PricingSectionProps) {
     if (currentCategory?.id && currentCategory.id !== prevCategoryId.current) {
       prevCategoryId.current = currentCategory.id
       const durations = Array.from(
-        new Set(currentCategory.plans.map((p) => p.durationMinutes))
+        new Set(currentCategory.plans.map((p) => p.durationMinutes).filter((d): d is number => typeof d === 'number'))
       ).sort((a, b) => a - b)
       setSelectedDuration(getInitialDuration(durations))
       setHasInteracted(false) // restart hint animation on tab change
@@ -142,9 +141,9 @@ export function PricingSection({ locale }: PricingSectionProps) {
         {/* ── Loading ──────────────────────────────────────────────────────── */}
         {!isLoaded && (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-brand-700 dark:text-gold-400">
-            <Loader2 size={32} className="animate-spin" />
+            {!regionError && <Loader2 size={32} className="animate-spin" />}{regionError && <button type="button" onClick={retry} className="rounded-xl border px-4 py-2">{locale === 'ar' ? 'إعادة المحاولة' : 'Retry'}</button>}
             <span className="text-sm font-medium">
-              {locale === 'ar' ? 'جارٍ تحديد منطقتك...' : 'Detecting your region...'}
+              {regionError ? (locale === 'ar' ? 'تعذر تحديد بلد الاتصال. أعد المحاولة لعرض الأسعار المناسبة لك.' : 'Unable to determine your country. Retry to see your prices.') : (locale === 'ar' ? 'جارٍ تحديد بلدك لعرض الأسعار المناسبة...' : 'Detecting your country for accurate pricing...')}
             </span>
           </div>
         )}
@@ -270,7 +269,7 @@ export function PricingSection({ locale }: PricingSectionProps) {
                           </span>
                           <span className="text-xs font-semibold text-brand-700 dark:text-gold-400 flex items-center gap-1">
                             <Clock size={12} />
-                            <span>{plan.durationMinutes} {t.pricing.minutesUnit}</span>
+                            <span>{plan.durationMinutes ? `${plan.durationMinutes} ${t.pricing.minutesUnit}` : locale === 'ar' ? 'وقت حسب احتياج الطالب' : 'Timing tailored to the student'}</span>
                           </span>
                         </div>
 
@@ -285,6 +284,7 @@ export function PricingSection({ locale }: PricingSectionProps) {
                         )}
                       </div>
 
+                      {plan.originalPrice && plan.originalPrice > plan.price && <div className="flex flex-wrap items-center gap-3 rounded-xl bg-emerald-50 dark:bg-brand-900 p-3"><span className="rounded-full bg-brand-700 text-white text-xs font-bold px-3 py-1">{locale === 'ar' ? 'خصم' : 'SAVE'} {Math.round((1 - plan.price / plan.originalPrice) * 100)}%</span><span className="text-sm text-charcoal-800/60 dark:text-cream-200/70"><span className="sr-only">{locale === 'ar' ? 'السعر الأصلي' : 'Original price'}</span><del>{plan.originalPrice} {currencyLabel}</del></span><span className="text-xs font-bold text-brand-800 dark:text-gold-300">{locale === 'ar' ? 'توفر' : 'You save'} {plan.originalPrice - plan.price} {currencyLabel}</span></div>}
                       {/* Price Banner */}
                       <div className="pt-2 pb-4 border-y border-cream-200 dark:border-brand-800/60 flex items-baseline gap-1.5">
                         <span className="text-3xl sm:text-4xl font-black text-brand-800 dark:text-gold-300">
@@ -294,16 +294,17 @@ export function PricingSection({ locale }: PricingSectionProps) {
                           {currencyLabel}
                         </span>
                         <span className="text-xs text-charcoal-800/60 dark:text-cream-200/60 mr-1 ml-1">
-                          / {t.pricing.perMonth}
+                          / {plan.billingPeriod === 'package' ? (locale === 'ar' ? 'الباقة' : 'package') : t.pricing.perMonth}
                         </span>
                       </div>
 
+                      {plan.siblingsOnly && <p className="text-xs font-semibold text-brand-800 dark:text-gold-300">{locale === 'ar' ? 'السعر للمجموعة كاملة • 8 حصص شهريًا للمجموعة • العرض للإخوة فقط' : 'Total group price • 8 group classes per month • Siblings only'}</p>}
                       {/* Key Stats */}
                       <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-charcoal-800 dark:text-cream-200 bg-cream-50 dark:bg-brand-900/40 p-3 rounded-xl border border-cream-200 dark:border-brand-800">
                         <div className="flex items-center gap-1.5">
                           <Calendar size={13} className="text-gold-600" />
                           <span>
-                            {plan.sessionsPerMonth} {locale === 'ar' ? 'حصص شهرياً' : 'classes/mo'}
+                            {plan.sessionsPerMonth} {plan.billingPeriod === 'package' ? (locale === 'ar' ? 'حصص' : 'classes') : (locale === 'ar' ? 'حصص شهرياً' : 'classes/mo')}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">

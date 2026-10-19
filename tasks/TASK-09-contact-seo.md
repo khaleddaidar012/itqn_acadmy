@@ -7,7 +7,7 @@ Implement verified contact details and footer:
 - Facebook: `https://www.facebook.com/profile.php?id=61577532029246`
 - Instagram: `https://www.instagram.com/academy_itqan_quran`
 - TikTok: `https://www.tiktok.com/@itqan.academy40`
-- WhatsApp: `+201028791134`
+- WhatsApp: `+201277622042`
 Remove all Daidar metadata and replace with ITQAN Quran Academy bilingual SEO metadata.
 
 ## Subtasks

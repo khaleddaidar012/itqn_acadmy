@@ -19,7 +19,7 @@ export function Navbar({ locale }: NavbarProps) {
   const t = getTranslations(locale)
   const pathname = usePathname()
   const { theme, toggleTheme } = useTheme()
-  const { region, toggleRegion } = useRegion()
+  const { region, isLoaded } = useRegion()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -111,14 +111,12 @@ export function Navbar({ locale }: NavbarProps) {
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Region / Currency Switcher */}
-          <button
-            type="button"
-            onClick={toggleRegion}
+          <span
             className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-cream-200 dark:bg-brand-900/60 text-brand-800 dark:text-gold-300 border border-gold-300/40 hover:bg-gold-100 dark:hover:bg-brand-800 transition-all duration-200"
-            title="تبديل منطقة التسعير والعملة / Switch Region & Currency"
+            title="العملة حسب بلد الاتصال / Currency based on your country"
           >
-            <span>{region === 'EG' ? '🇪🇬 ج.م EGP' : '🌐 $ USD'}</span>
-          </button>
+            <span>{!isLoaded ? '…' : region === 'EG' ? '🇪🇬 ج.م EGP' : '🌐 $ USD'}</span>
+          </span>
 
           {/* Theme Toggle Button */}
           <button
@@ -135,6 +133,7 @@ export function Navbar({ locale }: NavbarProps) {
           {/* Language Switch */}
           <Link
             href={localePath}
+            onClick={() => { document.cookie = `itqan_language=${otherLocale}; Path=/; Max-Age=31536000; SameSite=Lax`; setIsMenuOpen(false) }}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-charcoal-800 dark:text-cream-100 hover:text-brand-600 hover:bg-cream-200 dark:hover:bg-brand-900/40 transition-colors"
             aria-label={`Switch to ${otherLocale === 'ar' ? 'Arabic' : 'English'}`}
           >
@@ -201,18 +200,16 @@ export function Navbar({ locale }: NavbarProps) {
               <span className="text-sm font-medium text-charcoal-800 dark:text-cream-200">
                 {locale === 'ar' ? 'المنطقة والعملة:' : 'Region & Currency:'}
               </span>
-              <button
-                type="button"
-                onClick={toggleRegion}
+              <span
                 className="px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white"
               >
-                {region === 'EG' ? '🇪🇬 مصر (ج.م)' : '🌐 دولي ($ USD)'}
-              </button>
+                {!isLoaded ? '…' : region === 'EG' ? '🇪🇬 مصر (ج.م)' : '🌐 دولي ($ USD)'}
+              </span>
             </div>
 
             <Link
               href={localePath}
-              onClick={() => setIsMenuOpen(false)}
+              onClick={() => { document.cookie = `itqan_language=${otherLocale}; Path=/; Max-Age=31536000; SameSite=Lax`; setIsMenuOpen(false) }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-cream-300 dark:border-brand-800 text-sm font-medium text-charcoal-800 dark:text-cream-100"
             >
               <Globe size={16} />
