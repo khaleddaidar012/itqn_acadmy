@@ -40,6 +40,13 @@ yarn-error.log*
 .dev.vars
 .dev.vars.*
 /.local/
+/creds.js
+
+# Local Zoom review drafts and owner-restricted architecture artifacts
+/tasks/fullsystem/ZOOM-SUBMISSION.md
+/tasks/fullsystem/ZOOM-PUBLIC-PAGES-DRAFT.md
+/tasks/fullsystem/zoom-architecture.svg
+/tasks/fullsystem/zoom-architecture.png
 
 # Separate advertising demo copy
 /جينيرال/

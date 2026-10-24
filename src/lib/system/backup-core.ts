@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-export const BACKUP_TABLES = ['users', 'lessons', 'progress', 'teacher_excuses', 'payment_orders', 'payment_events', 'system_settings', 'report_shares'] as const
+export const BACKUP_TABLES = ['users', 'lessons', 'progress', 'teacher_excuses', 'payment_orders', 'payment_events', 'system_settings', 'report_shares', 'student_subscriptions', 'subscription_receipts', 'zoom_attendance_events', 'zoom_student_links'] as const
 type Row = Record<string, string | number | null>
 export type BackupDatabase = {
   prepare(sql: string): { get(...values: (string | number | null)[]): Promise<Row | undefined>; run(...values: (string | number | null)[]): Promise<unknown>; all(...values: (string | number | null)[]): Promise<Row[]> };
@@ -43,6 +43,12 @@ export function verifyBackup(data: string) {
   const envelope = JSON.parse(data)
   if (envelope.format !== 'itqan-backup' || typeof envelope.payload !== 'string' || createHash('sha256').update(envelope.payload).digest('hex') !== envelope.sha256) throw new Error('Backup checksum failed')
   const payload = JSON.parse(envelope.payload)
+  // Existing exports predate subscriptions. Missing new tables represent no subscriptions.
+  if (payload.version === 1 && payload.tables) {
+    for (const table of ['student_subscriptions', 'subscription_receipts', 'zoom_attendance_events', 'zoom_student_links']) {
+      if (!(table in payload.tables)) payload.tables[table] = []
+    }
+  }
   if (payload.version !== 1 || !payload.tables || BACKUP_TABLES.some(table => !Array.isArray(payload.tables[table])) || Object.keys(payload.tables).some(table => !BACKUP_TABLES.includes(table as typeof BACKUP_TABLES[number]))) throw new Error('Unsupported backup')
   return payload as { version: 1; created: string; tables: Record<string, Row[]> }
 }

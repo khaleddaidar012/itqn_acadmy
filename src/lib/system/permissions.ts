@@ -1,4 +1,5 @@
 export const PERMISSIONS = [
+  { key: 'subscriptions_manage', label: 'إدارة اشتراكات الطلاب وتسجيل السداد اليدوي' },
   { key: 'reports_manage', label: 'إعداد ومشاركة تقارير الطلاب لولي الأمر' },
   { key: 'backups_manage', label: 'إدارة وتنزيل النسخ الاحتياطية الكاملة للأكاديمية' },
   { key: 'staff_create', label: 'إضافة معلمين وموظفين' },

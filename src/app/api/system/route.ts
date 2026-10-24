@@ -4,6 +4,7 @@ import { db, bootstrapAdmin, hashPassword, checkPassword, safeUser, tokenHash, r
 import { currentUser } from '@/lib/system/auth'
 import { accounting, type Lesson } from '@/lib/system/accounting'
 import { allowed, grants, PERMISSIONS, DEFAULT_MANAGER, type Permission } from '@/lib/system/permissions'
+import { presenceIntervals, presenceMinutes, type AttendanceEvent } from '@/lib/zoom/attendance'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -43,14 +44,29 @@ export async function GET() {
       : user.role === 'teacher' ? await db().prepare('SELECT id,name,role,can_teach,pages,subjects,enrollment_status FROM users WHERE id=? OR id IN (SELECT student_id FROM lessons WHERE teacher_id=?)').all(user.id, user.id)
       : [await safeUser(user.id)]
     const all = await db().prepare('SELECT l.*,t.name AS teacher_name,s.name AS student_name FROM lessons l JOIN users t ON t.id=l.teacher_id JOIN users s ON s.id=l.student_id ORDER BY l.start DESC').all() as unknown as Lesson[]
+    const zoomMeetings = new Set((await db().prepare('SELECT lesson_id FROM zoom_meetings').all()).map(m=>Number(m.lesson_id)))
+    const zoomEvents = await db().prepare('SELECT lesson_id,actor,participant,occurrence,kind,at_ms,joined_ms FROM zoom_attendance_events ORDER BY at_ms').all() as unknown as (AttendanceEvent & {lesson_id:number})[]
+    const eventsByLesson = new Map<number,AttendanceEvent[]>()
+    for(const event of zoomEvents) eventsByLesson.set(event.lesson_id,[...(eventsByLesson.get(event.lesson_id)||[]),event])
+    for(const lesson of all) {
+      const events=eventsByLesson.get(lesson.id)
+      lesson.zoom_meeting=zoomMeetings.has(lesson.id) || !!events
+      if(lesson.zoom_meeting) {
+        lesson.zoom_intervals=presenceIntervals(events||[],'teacher')
+        const intervals=lesson.zoom_intervals
+        lesson.joined=intervals.length ? new Date(Math.min(...intervals.map(i=>i[0]))).toISOString() : null
+        lesson.left_at=intervals.length && intervals.every(i=>i[1]!==null) ? new Date(Math.max(...intervals.map(i=>i[1] as number))).toISOString() : null
+        lesson.student_zoom_minutes=presenceMinutes(presenceIntervals(events||[],'student'),Date.parse(lesson.start),Date.parse(lesson.start)+lesson.duration*60000,Date.now())
+      }
+    }
     const studentIds = new Set(users.filter(u => u?.role === 'student').map(u => Number(u?.id)))
     const lessons = all.filter(l => manager(user) || user.role === 'teacher' && l.teacher_id === user.id || user.role === 'student' && l.student_id === user.id || user.role === 'parent' && studentIds.has(l.student_id)).map(l => {
       if (user.role === 'admin' || user.role === 'teacher' && l.teacher_id === user.id) return { ...l, teacher_attended: !!l.joined, ...accounting(l) }
       if (manager(user)) {
-        const { rate, currency, joined, left_at, ...visible } = l
+        const { rate, currency, joined, left_at, zoom_intervals, ...visible } = l
         return { ...visible, teacher_attended: !!l.joined, ...(allowed(user, 'pay_view') ? { rate, currency } : {}), ...(allowed(user, 'hours_view') ? { minutes: accounting(l).minutes } : {}) }
       }
-      const { rate: _rate, currency: _currency, joined: _joined, left_at: _left, ...visible } = l
+      const { rate: _rate, currency: _currency, joined: _joined, left_at: _left, zoom_intervals: _intervals, ...visible } = l
       return { ...visible, teacher_attended: !!l.joined }
     })
     const progress = (await db().prepare('SELECT p.*,t.name AS teacher_name FROM progress p JOIN users t ON t.id=p.teacher_id ORDER BY p.created DESC').all()).filter(p => manager(user) || (user.role === 'teacher' && p.teacher_id === user.id) || (user.role === 'student' && p.student_id === user.id) || (user.role === 'parent' && studentIds.has(Number(p.student_id))))
@@ -62,7 +78,7 @@ export async function GET() {
     const reports = allowed(user, 'hours_view') ? all.map(l => ({ teacher_id: l.teacher_id, start: l.start, joined: !!l.joined, minutes: accounting(l).minutes, ...(allowed(user, 'pay_view') ? { earned: accounting(l).earned, currency: l.currency } : {}) })) : []
     const excuses = user.role === 'teacher' || user.role === 'admin' ? (await db().prepare('SELECT e.*,l.student_id,l.subject,l.start,l.duration,t.name AS teacher_name,s.name AS student_name FROM teacher_excuses e JOIN lessons l ON l.id=e.lesson_id JOIN users t ON t.id=e.teacher_id JOIN users s ON s.id=l.student_id ORDER BY e.created DESC').all()).filter(e => allowed(user, 'schedule_manage') || e.teacher_id === user.id) : []
     const pending = user.role === 'student' && user.enrollment_status !== 'active'
-    return NextResponse.json({ user, users, staff, lessons: pending ? [] : lessons, progress: pending ? [] : progress, reports, excuses, now: new Date().toISOString(), cancelHours: Number(process.env.ITQAN_CANCEL_HOURS) || 12 }, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ user, users, staff, lessons: pending ? [] : lessons, progress: pending ? [] : progress, reports, excuses, zoomEnabled: process.env.ITQAN_MEETING_PROVIDER==='zoom', now: new Date().toISOString(), cancelHours: Number(process.env.ITQAN_CANCEL_HOURS) || 12 }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) { return errorResponse(error) }
 }
 function errorResponse(error: unknown) {
@@ -176,6 +192,7 @@ export async function POST(request: NextRequest) {
     } else if (action === 'join' || action === 'leave') {
       const lesson = await lessonById(body.id)
       if (user.role !== 'teacher' || lesson.teacher_id !== user.id) fail('هذه الحصة ليست لك', 403)
+      if(await db().prepare('SELECT lesson_id FROM zoom_meetings WHERE lesson_id=?').get(lesson.id)) fail('حضور هذه الحصة يسجله Zoom تلقائيًا؛ استخدم زر دخول Zoom.')
       const now = Date.now(); const start = Date.parse(lesson.start); const end = start + lesson.duration * 60000
       if (!['scheduled', 'attended', 'absent', 'late_cancelled'].includes(lesson.status)) fail('الحصة غير متاحة')
       if (now < start - 5 * 60000 || now >= end) fail('الدخول متاح قبل الحصة بخمس دقائق وحتى نهايتها')

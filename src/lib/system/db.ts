@@ -5,6 +5,12 @@ import { staffRules } from './staff-rules'
 import { excuseSchema } from './excuse-schema'
 import { paymentSchema } from '@/lib/payments/schema'
 import { servicesSchema } from './services-schema'
+import { subscriptionsSchema } from './subscriptions-schema'
+import { zoomSchema } from '@/lib/zoom/schema'
+import { zoomMeetingsSchema } from '@/lib/zoom/meetings-schema'
+import { zoomEndSchema } from '@/lib/zoom/end-schema'
+import { zoomStudentSchema } from '@/lib/zoom/student-schema'
+import { backupStorageSchema } from './backup-storage-schema'
 export type User = { id: number; name: string; email: string; role: 'admin' | 'teacher' | 'student' | 'parent'; manage: number; can_teach?: number; rate: number; currency: string; subjects: string; parent_id: number | null; pages: number; permissions?: string | null; disabled?: number; payment_confirmed?: number; enrollment_status?: 'pending' | 'active' }
 type Value = string | number | null
 type Row = Record<string, Value>
@@ -36,7 +42,7 @@ async function connection(): Promise<LocalDatabase | D1Database> {
     if (!columns.has('can_teach')) {
       database.exec("ALTER TABLE users ADD COLUMN can_teach INTEGER NOT NULL DEFAULT 1 CHECK(can_teach IN (0,1)); UPDATE users SET can_teach=0 WHERE role='teacher' AND manage=1 AND rate=0 AND id NOT IN (SELECT teacher_id FROM lessons)")
     }
-    database.exec(staffRules + excuseSchema + paymentSchema + servicesSchema)
+    database.exec(staffRules + excuseSchema + paymentSchema + servicesSchema + subscriptionsSchema + zoomSchema + zoomMeetingsSchema + zoomEndSchema + zoomStudentSchema + backupStorageSchema)
     return database
   })()
   return local

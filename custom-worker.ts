@@ -2,16 +2,23 @@
 // @ts-ignore generated worker is not present in a clean checkout
 import handler from './.open-next/worker.js'
 import { createBackup, type BackupDatabase } from './src/lib/system/backup-core'
-type Env = { DB: { prepare(sql: string): Statement; batch(statements: Statement[]): Promise<{ results: Record<string, string | number | null>[] }[]> }; BACKUPS: { put(key: string, value: string): Promise<unknown>; get(key: string): Promise<{ text(): Promise<string> } | null> } }
+import { d1BackupStorage } from './src/lib/system/d1-backup-storage'
+import { closeDueMeetings } from './src/lib/zoom/auto-end'
+import { zoomConfiguration } from './src/lib/zoom/client'
+type Env = { DB: { prepare(sql: string): Statement; batch(statements: Statement[]): Promise<{ results: Record<string, string | number | null>[] }[]> } }
 type Statement = { bind(...values: (string | number | null)[]): Statement; first(): Promise<Record<string, string | number | null> | null>; all(): Promise<{ results: Record<string, string | number | null>[] }>; run(): Promise<unknown> }
 export default {
   fetch: handler.fetch,
-  async scheduled(_event: unknown, env: Env) {
-    const database: BackupDatabase = {
+  async scheduled(event: {scheduledTime?:number}, env: Env & Record<string, unknown>) {
+    const database: BackupDatabase & { batch(queries: { sql: string; values: (string | number | null)[] }[]): Promise<unknown> } = {
       prepare(sql) { return { get: async (...v) => await env.DB.prepare(sql).bind(...v).first() || undefined, all: async (...v) => (await env.DB.prepare(sql).bind(...v).all()).results, run: (...v) => env.DB.prepare(sql).bind(...v).run() } },
       async snapshot(tables) { const results = await env.DB.batch(tables.map(t => env.DB.prepare(`SELECT * FROM ${t}`))); return Object.fromEntries(tables.map((t, i) => [t, results[i].results])) },
+      batch(queries) { return env.DB.batch(queries.map(q => env.DB.prepare(q.sql).bind(...q.values))) },
     }
-    await createBackup(database, { put: (key, value) => env.BACKUPS.put(key, value), get: async key => (await env.BACKUPS.get(key))?.text() ?? null }, true)
+    const configEnv=Object.fromEntries(Object.entries(env).filter(([,value])=>typeof value==='string')) as NodeJS.ProcessEnv
+    const {config}=zoomConfiguration({...configEnv,NODE_ENV:'production'})
+    if(env.ZOOM_AUTO_END==='1' && config) await closeDueMeetings(database,config)
+    if(new Date(event.scheduledTime??Date.now()).getUTCMinutes()===0) await createBackup(database, d1BackupStorage(database), true)
   },
 }
 // @ts-ignore generated exports

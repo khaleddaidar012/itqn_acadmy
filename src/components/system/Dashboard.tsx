@@ -13,6 +13,10 @@ import SystemHeader from './SystemHeader'
 import PaymentsPanel from './PaymentsPanel'
 import { CalendarDays } from 'lucide-react'
 import StudentsPanel from './StudentsPanel'
+import SubscriptionsPanel from './SubscriptionsPanel'
+import ZoomSettings from './ZoomSettings'
+import ZoomLesson from './ZoomLesson'
+import ZoomParticipants from './ZoomParticipants'
 import TeacherSchedule from './TeacherSchedule'
 import WeeklySchedule from './WeeklySchedule'
 import LessonAttendance from './LessonAttendance'
@@ -20,7 +24,7 @@ import ExcusesPanel, { type Excuse } from './ExcusesPanel'
 
 type DisplayLesson = Lesson & { minutes?: number; lateMinutes?: number; lateDeduction?: number; earned?: number }
 type Progress = { id: number; student_id: number; pages: number; note: string; created: string; teacher_name: string }
-type Data = { user: User; users: User[]; staff: User[]; lessons: DisplayLesson[]; progress: Progress[]; reports: { teacher_id: number; start: string; joined: boolean; minutes: number; earned?: number; currency?: string }[]; cancelHours: number; excuses: Excuse[] }
+type Data = { user: User; users: User[]; staff: User[]; lessons: DisplayLesson[]; progress: Progress[]; reports: { teacher_id: number; start: string; joined: boolean; minutes: number; earned?: number; currency?: string }[]; cancelHours: number; excuses: Excuse[]; zoomEnabled?: boolean }
 const statuses: Record<string, string> = { scheduled: 'مجدولة', attended: 'حضر ✅', absent: 'غاب ❌', postponed: 'تم تأجيلها 🔄', cancelled: 'ألغيت في الموعد المسموح 🚫', late_cancelled: 'إلغاء متأخر — تحتسب على الطالب ⚠️' }
 const roles: Record<string, string> = { admin: 'مدير الأكاديمية', teacher: 'معلم', student: 'طالب', parent: 'ولي أمر' }
 const date = (value: string, options?: Intl.DateTimeFormatOptions) => new Date(value).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', ...options })
@@ -46,6 +50,7 @@ export default function Dashboard({ locale }: { locale: string }) {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('overview')
+  useEffect(() => { if (new URLSearchParams(window.location.search).has('zoom')) setTab('settings') }, [])
   const [accountType, setAccountType] = useState('teacher')
   const [week, setWeek] = useState(0)
   const [month, setMonth] = useState(cairoMonth(new Date().toISOString()))
@@ -99,7 +104,7 @@ export default function Dashboard({ locale }: { locale: string }) {
   weekStart.setUTCDate(weekStart.getUTCDate() - ((weekStart.getUTCDay() + 1) % 7) + week * 7)
   const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setUTCDate(d.getUTCDate() + i); return d })
   const weekLessons = lessons.filter(l => days.some(d => cairoDay(d.toISOString()) === cairoDay(l.start)))
-  const tabs = [{ id: 'overview', label: 'نظرة عامة' }, ...(teamAccess ? [{ id: 'accounts', label: 'المعلمون والموظفون' }] : []), ...(allowed(user, 'students_manage') ? [{ id: 'students', label: 'الطلاب وطلبات التسجيل' }] : []), { id: 'week', label: 'الجدول الأسبوعي' }, { id: 'history', label: 'سجل الحصص' }, { id: 'progress', label: 'تقدم الحفظ' }, ...(manage ? [{ id: 'schedule', label: 'تعيين الحصص' }] : []),  ...(manage || user.role === 'teacher' ? [{ id: 'excuses', label: 'الاعتذارات وحصص بحاجة للتعيين' }] : []), ...(user.role === 'admin' || user.role === 'student' ? [{ id: 'payments', label: 'المدفوعات' }] : []), ...(allowed(user, 'reports_manage') ? [{ id: 'studentReports', label: 'تقارير الطلاب' }] : []), { id: 'settings', label: 'الإعدادات' }]
+  const tabs = [{ id: 'overview', label: 'نظرة عامة' }, ...((allowed(user, 'subscriptions_manage') || user.role === 'student' || user.role === 'parent') ? [{ id: 'subscriptions', label: 'الاشتراكات ورصيد الحصص' }] : []), ...(teamAccess ? [{ id: 'accounts', label: 'المعلمون والموظفون' }] : []), ...(allowed(user, 'students_manage') ? [{ id: 'students', label: 'الطلاب وطلبات التسجيل' }] : []), { id: 'week', label: 'الجدول الأسبوعي' }, { id: 'history', label: 'سجل الحصص' }, { id: 'progress', label: 'تقدم الحفظ' }, ...(manage ? [{ id: 'schedule', label: 'تعيين الحصص' }] : []),  ...(manage || user.role === 'teacher' ? [{ id: 'excuses', label: 'الاعتذارات وحصص بحاجة للتعيين' }] : []), ...(user.role === 'admin' || user.role === 'student' ? [{ id: 'payments', label: 'المدفوعات' }] : []), ...(allowed(user, 'reports_manage') ? [{ id: 'studentReports', label: 'تقارير الطلاب' }] : []), { id: 'settings', label: 'الإعدادات' }]
   const field = (label: string, name: string, type = 'text', extra: Record<string, unknown> = {}) => <label className="block text-sm">{label}<input className="system-input" name={name} type={type} required {...extra} /></label>
   const selectUser = (label: string, name: string, list: User[]) => <label className="block text-sm">{label}<select className="system-input" name={name} required defaultValue=""><option value="" disabled>اختر…</option>{list.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
   function lessonCard(l: DisplayLesson) {
@@ -114,9 +119,11 @@ export default function Dashboard({ locale }: { locale: string }) {
       <div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-bold">{l.subject} • {l.student_name}</h3><p className="text-sm text-slate-500 mt-1">المعلم: {l.teacher_name}</p></div><span className="text-xs rounded-full bg-[#eef5ef] px-3 py-2 h-fit">{statuses[l.status]}</span></div>
       <p className="text-sm">{date(l.start, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} • {l.duration} دقيقة</p>
       <LessonAttendance lesson={l} now={now} />
+      {l.zoom_meeting && (allowed(user,'attendance_manage') || user.role==='teacher'&&l.teacher_id===user.id) && <ZoomParticipants lessonId={l.id} studentName={l.student_name||'طالب الحصة'} onChange={()=>void load()} />}
+      {(data!.zoomEnabled || l.zoom_meeting) && current && <ZoomLesson id={l.id} teacher={user.role==='teacher' && l.teacher_id===user.id} canPrepare={allowed(user,'schedule_manage') || user.role==='teacher' && l.teacher_id===user.id} canReview={allowed(user,'schedule_manage')} canJoin={user.role==='teacher' && l.teacher_id===user.id || ['student','parent'].includes(user.role)} open={open} ended={now>=end} onChange={()=>void load()} />}
       {user.role === 'teacher' && l.teacher_id === user.id && <div className="text-sm bg-slate-50 rounded-xl p-3">{l.joined ? `دخولك: ${date(l.joined, { hour: '2-digit', minute: '2-digit' })} • تأخير ${decimal(live.lateMinutes)} دقيقة • قيمة دقائق التأخير ${money(live.lateDeduction, l.currency)}` : 'لم تسجّل دخول الحصة بعد'}<p className="mt-2 font-bold" role="timer">وقت الحضور المحتسب: <span dir="ltr">{counter}</span> • المستحق حتى الآن: {money(live.earned, l.currency)}</p>{l.joined && now < Date.parse(l.start) && <p className="mt-2 text-emerald-700">دخلت قبل الموعد. يبدأ احتساب الأجر عند بداية الحصة.</p>}{l.joined && live.lateMinutes > 0 && <p className="mt-2 text-amber-700">تم خصم قيمة وقت التأخير فقط: {money(live.lateDeduction, l.currency)}</p>}<p className="text-xs text-slate-500 mt-2">العداد يتحدث كل ثانية ويتوقف عند إنهاء حضورك أو انتهاء موعد الحصة. وقت الدخول الرسمي يسجله الخادم.</p></div>}
       <div className="flex flex-wrap gap-2 text-sm">
-        {user.role === 'teacher' && l.teacher_id === user.id && current && open && !l.left_at && <button disabled={busy} className="system-button" onClick={() => void act({ action: l.joined ? 'leave' : 'join', id: l.id })}>{l.joined ? 'إنهاء حضور الحصة' : 'تسجيل دخول الحصة'}</button>}
+        {!l.zoom_meeting && (!data!.zoomEnabled || !!l.joined) && user.role === 'teacher' && l.teacher_id === user.id && current && open && !l.left_at && <button disabled={busy} className="system-button" onClick={() => void act({ action: l.joined ? 'leave' : 'join', id: l.id })}>{l.joined ? 'إنهاء حضور الحصة' : 'تسجيل دخول الحصة'}</button>}
         {user.role === 'teacher' && l.teacher_id === user.id && current && Date.now() >= end && <span className="text-slate-500">انتهت الفترة المحددة للحصة</span>}
         {(allowed(user, 'attendance_manage') || user.role === 'teacher' && l.teacher_id === user.id) && editable && Date.now() >= Date.parse(l.start) && <><button disabled={busy} className="system-button" onClick={() => void act({ action: 'attendance', id: l.id, status: 'attended' })}>الطالب حضر</button><button disabled={busy} className="px-3 py-2 rounded-xl border" onClick={() => void act({ action: 'attendance', id: l.id, status: 'absent' })}>الطالب غاب</button></>}
         {(manage || ['student', 'parent'].includes(user.role)) && l.status === 'scheduled' && !l.joined && Date.parse(l.start) > Date.now() && <button disabled={busy} className="px-3 py-2 rounded-xl border border-amber-300 text-amber-800" onClick={() => { const late = Date.parse(l.start) - Date.now() < data!.cancelHours * 3600000; if (window.confirm(late ? 'الإلغاء متأخر وستُحتسب الحصة على الطالب. تأكيد الإلغاء؟' : 'تأكيد إلغاء الحصة في المهلة المسموحة؟')) void act({ action: 'cancel', id: l.id }) }}>إلغاء الحصة</button>}
@@ -145,12 +152,14 @@ export default function Dashboard({ locale }: { locale: string }) {
         </section>}
         <h2 className="text-xl font-bold mb-4">حصصك القادمة</h2><div className="grid md:grid-cols-2 gap-4">{lessons.filter(l => l.status === 'scheduled' && Date.parse(l.start) > Date.now()).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 4).map(lessonCard)}</div>{!lessons.length && <Empty />}
       </>}
+      {tab === 'subscriptions' && (allowed(user, 'subscriptions_manage') || user.role === 'student' || user.role === 'parent') && <SubscriptionsPanel />}
       {tab === 'week' && <WeeklySchedule lessons={lessons} teachers={teachers} students={students} days={days} week={week} setWeek={setWeek} openHistory={() => setTab('history')} />}
       {tab === 'history' && <><h2 className="text-xl font-bold mb-2">السجل الكامل للحصص</h2><p className="text-sm text-slate-500 mb-5">الإلغاء قبل {data.cancelHours} ساعة مسموح، والإلغاء بعد ذلك يحتسب على الطالب.</p><div className="grid md:grid-cols-2 gap-4">{lessons.map(lessonCard)}</div>{!lessons.length && <Empty />}</>}
       {tab === 'progress' && <><h2 className="text-xl font-bold mb-5">رحلة حفظ القرآن</h2><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">{students.map(s => <article key={s.id} className="bg-white p-6 rounded-2xl border"><h3 className="font-bold">{s.name}</h3><div className="mt-5"><ProgressArc pages={s.pages} name={s.name} /></div></article>)}</div><p className="text-sm text-slate-500 mb-4">النسبة توثيق المعلم للصفحات المتقنة، ويظهر أدناه سجل الملاحظات.</p>{progress.map(p => <article key={p.id} className="bg-white p-5 rounded-xl border mb-3"><p className="font-bold">{users.find(u => u.id === p.student_id)?.name || 'الطالب'} • {p.pages} صفحة</p><p className="my-2 whitespace-pre-wrap">{p.note}</p><p className="text-xs text-slate-500">{p.teacher_name} • {date(p.created)}</p></article>)}{!progress.length && <p className="text-slate-500">لا توجد ملاحظات حفظ مسجلة بعد.</p>}</>}
       {tab === 'excuses' && (manage || user.role === 'teacher') && <ExcusesPanel requests={data.excuses || []} teachers={teachers} manage={manage} busy={busy} act={act} />}
       {tab === 'schedule' && manage && <TeacherSchedule teachers={teachers} students={students} lessons={lessons} busy={busy} act={act} />}
       {allowed(user, 'backups_manage') && <BackupSettings userId={user.id} visible={tab === 'settings'} />}
+      {tab === 'settings' && (user.role === 'admin' || user.role === 'teacher' && user.can_teach === 1) && <ZoomSettings locale={locale} />}
       {tab === 'settings' && <section className="max-w-md bg-white rounded-2xl border p-6"><h2 className="text-xl font-bold mb-5">تغيير كلمة المرور</h2><form onSubmit={e => void form(e, 'changePassword')} className="space-y-5">{field('كلمة المرور الحالية', 'oldPassword', 'password', { autoComplete: 'current-password' })}{field('كلمة المرور الجديدة — 12 حرفًا على الأقل', 'password', 'password', { minLength: 12, maxLength: 256, autoComplete: 'new-password' })}<button disabled={busy} className="system-button">حفظ كلمة المرور</button></form><p className="text-xs text-slate-500 mt-4">يتم تسجيل الخروج من باقي الأجهزة بعد تغيير كلمة المرور.</p></section>}
       {tab === 'studentReports' && allowed(user, 'reports_manage') && <ReportsPanel students={students} />}
       {tab === 'payments' && (user.role === 'admin' || user.role === 'student') && <PaymentsPanel locale={locale} admin={user.role === 'admin'} />}

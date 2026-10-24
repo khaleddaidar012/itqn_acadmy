@@ -1,12 +1,9 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { db } from './db'
+import { d1BackupStorage } from './d1-backup-storage'
 import { backupDay, createBackup, type BackupStorage } from './backup-core'
 export async function backupStorage(): Promise<BackupStorage> {
   if (process.env.ITQAN_USE_D1 === '1') {
-    const { env } = await getCloudflareContext({ async: true })
-    const bucket = (env as unknown as { BACKUPS?: { put(key: string, value: string): Promise<unknown>; get(key: string): Promise<{ text(): Promise<string> } | null> } }).BACKUPS
-    if (!bucket) throw new Error('Configure private BACKUPS R2 binding')
-    return { put: (key, data) => bucket.put(key, data), get: async key => (await bucket.get(key))?.text() ?? null }
+    return d1BackupStorage(db())
   }
   const { mkdir, writeFile, readFile } = await import('node:fs/promises'); const { join } = await import('node:path')
   const directory = join(process.env.ITQAN_DATA_DIR || join(process.cwd(), '.data'), 'backups')

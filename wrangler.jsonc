@@ -2,17 +2,41 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "itqan-academy",
   "main": "custom-worker.ts",
-  "triggers": { "crons": ["0 * * * *"] },
-  "r2_buckets": [{ "binding": "BACKUPS", "bucket_name": "itqan-private-backups" }],
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
   "compatibility_date": "2026-10-01",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "itqan-academy" }],
-  "vars": { "ITQAN_USE_D1": "1", "ITQAN_CANCEL_HOURS": "12", "ITQAN_MEETING_PROVIDER": "zoom" },
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "itqan-academy",
-    "database_id": "00000000-0000-0000-0000-000000000000",
-    "migrations_dir": "migrations"
-  }]
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "itqan-academy"
+    }
+  ],
+  "vars": {
+    "ITQAN_USE_D1": "1",
+    "ZOOM_AUTO_END": "1",
+    "ITQAN_CANCEL_HOURS": "12",
+    "ITQAN_MEETING_PROVIDER": "zoom",
+    "NEXT_PUBLIC_SITE_URL": "https://itqanquranacademy.com",
+    "ZOOM_REDIRECT_URI": "https://itqanquranacademy.com/api/zoom/callback"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "itqan-academy",
+      "database_id": "f6b7089d-2e4b-45c3-aad3-5d2965905596",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "account_id": "0e1b46396c9817c2563c6875112fa99b"
 }

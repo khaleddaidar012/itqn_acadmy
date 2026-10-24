@@ -30,3 +30,7 @@
 نجح بناء OpenNext على هذا الجهاز، ونجحت اختبارات النظام داخل Workers + D1 بالمحاكي، بما فيها تسجيل الحسابات والتحقق من كلمات المرور والصلاحيات والمستحقات. فحص الاتصال الحالي أظهر أن Wrangler غير مسجل بحساب Cloudflare. لا يوجد نشر فعلي أو اجتماع خارجي مفعّل.
 
 مراجع التنفيذ: [OpenNext — الإعداد](https://opennext.js.org/cloudflare/get-started)، [D1](https://developers.cloudflare.com/d1/)، [Google Meet — إنهاء الاجتماع](https://developers.google.com/workspace/meet/api/reference/rest/v2/spaces/endActiveConference)، [Zoom — أحداث الاجتماعات](https://developers.zoom.us/docs/api/meetings/events/).
+
+## تحديث التخزين وحساب النشر
+
+حساب النشر مثبت في wrangler.jsonc. اتصال خالد المحلي منفصل عبر XDG_CONFIG_HOME=.local/cloudflare-khaled؛ لا تستخدم اتصال Wrangler الافتراضي الخاص بحساب آخر. النسخ الاحتياطية تحفظ داخل D1 عبر migration 0009؛ لا حاجة إلى R2. ملفات النسخ مجزأة ولا تدخل ضمن النسخة التالية. تنزيل نسخة خارجية يظل متاحًا من الإعدادات.
