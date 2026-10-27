@@ -127,7 +127,7 @@ try {
   const exported=await (await request('/api/backups?download='+backup.latest.id,admin)).text()
   const snapshot=verifyBackup(exported);assert.equal(snapshot.tables.zoom_attendance_events.length,6);assert.equal(snapshot.tables.zoom_meetings,undefined)
   const backupFile=join(directory,'zoom-backup.json');writeFileSync(backupFile,exported)
-  const restoredFile=join(directory,'restored-zoom.sqlite');restoreBackup(backupFile,restoredFile)
+  const restoredFile=join(directory,'restored-zoom.sqlite');await restoreBackup(backupFile,restoredFile,await(await request('/api/privacy?ledger=1',admin)).json())
   const restored=new DatabaseSync(restoredFile);assert.equal(restored.prepare('SELECT COUNT(*) AS n FROM zoom_attendance_events').get().n,6);restored.close()
   await request('/api/zoom/participants?lesson='+lessonId,student,undefined,403)
   await request('/api/zoom/participants?lesson='+lessonId,two,undefined,403)

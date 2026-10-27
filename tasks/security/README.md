@@ -21,6 +21,6 @@ The architecture diagram remains local by explicit owner instruction and must no
 
 ## Current limits
 
-The student-retention decision is one year after account closure. Historical erasure, a reliable closure timestamp, backup erasure handling and published privacy terms are separate unfinished work. Do not present that deletion guarantee as already implemented. TLS 1.2-only enforcement must be verified in the production edge configuration before answering the corresponding Zoom attestation. Scanners and procedures do not prove either requirement by themselves.
+The student-retention implementation now includes closure timestamps, an hourly erasure transaction, backup invalidation and guarded restoration; see DATA-RETENTION.md for exact scope and limits. Public privacy/terms are available at `/ar/privacy`, `/en/privacy`, `/ar/terms` and `/en/terms` after deploying migration 0013 and this source. Earlier assessments and generated evidence bundles describe their own scanned revisions and must not be passed off as scans of a later revision. TLS configuration must be verified before answering a Zoom attestation. Scanners and procedures alone do not prove operational deletion or provider-wide TLS settings.
 
 Official tool references: https://semgrep.dev/docs/semgrep-ci/sample-ci-configs and https://www.zaproxy.org/docs/docker/baseline-scan/.

@@ -5,6 +5,7 @@ import { createBackup, type BackupDatabase } from './src/lib/system/backup-core'
 import { d1BackupStorage } from './src/lib/system/d1-backup-storage'
 import { closeDueMeetings } from './src/lib/zoom/auto-end'
 import { zoomConfiguration } from './src/lib/zoom/client'
+import { runRetention } from './src/lib/system/retention'
 type Env = { DB: { prepare(sql: string): Statement; batch(statements: Statement[]): Promise<{ results: Record<string, string | number | null>[] }[]> } }
 type Statement = { bind(...values: (string | number | null)[]): Statement; first(): Promise<Record<string, string | number | null> | null>; all(): Promise<{ results: Record<string, string | number | null>[] }>; run(): Promise<unknown> }
 export default {
@@ -18,7 +19,11 @@ export default {
     const configEnv=Object.fromEntries(Object.entries(env).filter(([,value])=>typeof value==='string')) as NodeJS.ProcessEnv
     const {config}=zoomConfiguration({...configEnv,NODE_ENV:'production'})
     if(env.ZOOM_AUTO_END==='1' && config) await closeDueMeetings(database,config)
-    if(new Date(event.scheduledTime??Date.now()).getUTCMinutes()===0) await createBackup(database, d1BackupStorage(database), true)
+    if(new Date(event.scheduledTime??Date.now()).getUTCMinutes()===0) {
+      const storage = d1BackupStorage(database)
+      await runRetention(database, storage)
+      await createBackup(database, storage, true)
+    }
   },
 }
 // @ts-ignore generated exports

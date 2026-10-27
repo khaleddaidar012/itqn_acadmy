@@ -86,9 +86,9 @@ try {
   await request('/api/backups', staffCookie, { action: 'receipt', device: 'test-device-12345', id: status.latest.id, sha256: status.latest.sha256 })
   status = await (await request('/api/backups?device=test-device-12345', staffCookie)).json(); assert.equal(status.receipt.backup_id, status.latest.id)
   const backupFile = join(dir, 'portable.json'); writeFileSync(backupFile, json)
-  const target = join(dir, 'restored.sqlite'); const restored = restoreBackup(backupFile, target); assert.equal(restored.accounts, 3)
+  const ledger = await (await request('/api/privacy?ledger=1', admin)).json(); const target = join(dir, 'restored.sqlite'); const restored = await restoreBackup(backupFile, target, ledger); assert.equal(restored.accounts, 3)
   const restoredDb = new DatabaseSync(target); assert.equal(restoredDb.prepare('SELECT count(*) n FROM sessions').get().n, 0); assert.equal(restoredDb.prepare('SELECT count(*) n FROM users').get().n, 3); assert.equal(restoredDb.prepare('SELECT count(*) n FROM lessons').get().n, 1); assert.equal(restoredDb.prepare('SELECT pages FROM progress').get().pages, 35); assert.equal(restoredDb.prepare('PRAGMA integrity_check').get().integrity_check, 'ok'); restoredDb.close()
-  assert.throws(() => restoreBackup(backupFile, target), /already exists/)
+  await assert.rejects(() => restoreBackup(backupFile, target, ledger), /already exists/)
   const adapter = { prepare(sql) { return { get: async (...v) => local.prepare(sql).get(...v), run: async (...v) => local.prepare(sql).run(...v), all: async (...v) => local.prepare(sql).all(...v) } }, snapshot: async tables => Object.fromEntries(tables.map(t => [t, local.prepare(`SELECT * FROM ${t}`).all()])) }
   let writes = 0; const storage = { put: async () => { writes++ }, get: async () => null }
   await request('/api/backups', staffCookie, { action: 'toggle', enabled: false })

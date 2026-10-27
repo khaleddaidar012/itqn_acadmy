@@ -75,10 +75,11 @@ export async function GET() {
       const { rate, currency, permissions, email, ...visible } = t
       return { ...visible, ...(allowed(user, 'staff_edit') || allowed(user, 'staff_create') ? { email } : {}), ...(user.role === 'admin' ? { permissions } : {}), ...(allowed(user, 'pay_view') ? { rate, currency } : {}) }
     }) : []
-    const reports = allowed(user, 'hours_view') ? all.map(l => ({ teacher_id: l.teacher_id, start: l.start, joined: !!l.joined, minutes: accounting(l).minutes, ...(allowed(user, 'pay_view') ? { earned: accounting(l).earned, currency: l.currency } : {}) })) : []
+    const archivedPay = user.role === 'teacher' || allowed(user, 'hours_view') ? (await db().prepare('SELECT teacher_id,month,currency,minutes,earned FROM retained_teacher_totals').all()).filter(r=>allowed(user,'hours_view')||r.teacher_id===user.id).map(r=>({teacher_id:r.teacher_id,start:`${r.month}-01T12:00:00.000Z`,joined:false,minutes:r.minutes,...(allowed(user,'pay_view')||r.teacher_id===user.id?{earned:r.earned,currency:r.currency}:{})})) : []
+    const reports = allowed(user, 'hours_view') ? [...all.map(l => ({ teacher_id: l.teacher_id, start: l.start, joined: !!l.joined, minutes: accounting(l).minutes, ...(allowed(user, 'pay_view') ? { earned: accounting(l).earned, currency: l.currency } : {}) })), ...archivedPay] : []
     const excuses = user.role === 'teacher' || user.role === 'admin' ? (await db().prepare('SELECT e.*,l.student_id,l.subject,l.start,l.duration,t.name AS teacher_name,s.name AS student_name FROM teacher_excuses e JOIN lessons l ON l.id=e.lesson_id JOIN users t ON t.id=e.teacher_id JOIN users s ON s.id=l.student_id ORDER BY e.created DESC').all()).filter(e => allowed(user, 'schedule_manage') || e.teacher_id === user.id) : []
     const pending = user.role === 'student' && user.enrollment_status !== 'active'
-    return NextResponse.json({ user, users, staff, lessons: pending ? [] : lessons, progress: pending ? [] : progress, reports, excuses, zoomEnabled: process.env.ITQAN_MEETING_PROVIDER==='zoom', now: new Date().toISOString(), cancelHours: Number(process.env.ITQAN_CANCEL_HOURS) || 12 }, { headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ user, users, staff, lessons: pending ? [] : lessons, progress: pending ? [] : progress, reports, archivedPay, excuses, zoomEnabled: process.env.ITQAN_MEETING_PROVIDER==='zoom', now: new Date().toISOString(), cancelHours: Number(process.env.ITQAN_CANCEL_HOURS) || 12 }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) { return errorResponse(error) }
 }
 function errorResponse(error: unknown) {
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
     } else if (action === 'linkParent') {
       if (user.role !== 'admin') fail('للإدارة فقط', 403)
       const student = await safeUser(number(body.student_id, 1, 1e9)); const parent = await safeUser(number(body.parent_id, 1, 1e9))
-      if (student?.role !== 'student' || parent?.role !== 'parent') fail('اختر الطالب وولي الأمر')
+      if (student?.role !== 'student' || student.disabled || parent?.role !== 'parent' || parent.disabled) fail('اختر الطالب وولي الأمر')
       await db().prepare('UPDATE users SET parent_id=? WHERE id=?').run(parent.id, student.id)
     } else if (action === 'changePassword') {
       const password = str(body.password, 256)

@@ -20,6 +20,8 @@ export function Footer({ locale }: FooterProps) {
     { href: `/${locale}#why-us`, label: t.nav.whyUs },
     { href: `/${locale}#pricing`, label: t.nav.packages },
     { href: `/${locale}#contact`, label: t.nav.contact },
+    { href: `/${locale}/privacy`, label: locale === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy' },
+    { href: `/${locale}/terms`, label: locale === 'ar' ? 'شروط تكامل Zoom' : 'Zoom Integration Terms' },
   ]
 
   return (

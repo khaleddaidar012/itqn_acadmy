@@ -78,7 +78,7 @@ try {
   const exported = await (await request('/api/backups?download=' + backup.latest.id, admin)).text()
   assert.equal(verifyBackup(exported).tables.student_subscriptions.length, 2)
   const file = join(directory, 'backup.json'); writeFileSync(file, exported)
-  restoreBackup(file, join(directory, 'restored.sqlite'))
+  await restoreBackup(file, join(directory, 'restored.sqlite'), await (await request('/api/privacy?ledger=1', admin)).json())
   const restored = new DatabaseSync(join(directory, 'restored.sqlite'))
   assert.equal(restored.prepare('SELECT COUNT(*) AS n FROM subscription_receipts').get().n, 2); restored.close()
   // Exports made before subscriptions remain restorable.
