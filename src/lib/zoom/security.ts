@@ -8,7 +8,7 @@ function encryptionKey(value: string) {
 }
 export function validEncryptionKey(value: string) { try { encryptionKey(value); return true } catch { return false } }
 export function encryptTokens(value: { access_token: string; refresh_token: string }, key: string, userId: number) {
-  const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', encryptionKey(key), iv)
+  const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', encryptionKey(key), iv, { authTagLength: 16 })
   cipher.setAAD(Buffer.from('itqan-zoom:' + userId))
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(value), 'utf8'), cipher.final()])
   return ['v1', iv.toString('base64'), cipher.getAuthTag().toString('base64'), encrypted.toString('base64')].join('.')
@@ -16,7 +16,7 @@ export function encryptTokens(value: { access_token: string; refresh_token: stri
 export function decryptTokens(value: string, key: string, userId: number): { access_token: string; refresh_token: string } {
   const [version, iv, tag, data, extra] = value.split('.')
   if (version !== 'v1' || !iv || !tag || !data || extra) throw new Error('Invalid encrypted credentials')
-  const decipher = createDecipheriv('aes-256-gcm', encryptionKey(key), Buffer.from(iv, 'base64'))
+  const decipher = createDecipheriv('aes-256-gcm', encryptionKey(key), Buffer.from(iv, 'base64'), { authTagLength: 16 })
   decipher.setAAD(Buffer.from('itqan-zoom:' + userId)); decipher.setAuthTag(Buffer.from(tag, 'base64'))
   const parsed = JSON.parse(Buffer.concat([decipher.update(Buffer.from(data, 'base64')), decipher.final()]).toString('utf8'))
   if (typeof parsed.access_token !== 'string' || typeof parsed.refresh_token !== 'string') throw new Error('Invalid credentials')
