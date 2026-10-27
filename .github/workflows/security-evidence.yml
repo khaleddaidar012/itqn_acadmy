@@ -1,0 +1,118 @@
+name: Security evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [fullsystem]
+    paths:
+      - 'src/**'
+      - 'custom-worker.ts'
+      - 'next.config.js'
+      - 'package*.json'
+      - '.github/workflows/security-evidence.yml'
+      - 'scripts/security/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Install pinned Semgrep OSS
+        run: python -m pip install semgrep==1.182.1
+      - name: Scan application source without uploading code or metrics
+        env:
+          SEMGREP_SEND_METRICS: 'off'
+        run: |
+          mkdir -p security-reports
+          git rev-parse HEAD > security-reports/revision.txt
+          semgrep --version > security-reports/semgrep-version.txt
+          semgrep scan --config p/owasp-top-ten --config p/javascript --metrics=off --disable-version-check --error --json-output security-reports/semgrep.json --sarif-output security-reports/semgrep.sarif src custom-worker.ts scripts
+      - name: Preserve original scanner output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sast-semgrep-${{ github.sha }}
+          path: security-reports/
+          retention-days: 30
+          if-no-files-found: error
+
+  dast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ITQAN_USE_D1: '0'
+      ITQAN_DATA_DIR: ${{ runner.temp }}/itqan-security-data
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      ITQAN_ADMIN_EMAIL: admin@security-test.invalid
+      ITQAN_ADMIN_PASSWORD: isolated-security-test-only-2026
+      ITQAN_MEETING_PROVIDER: disabled
+      PAYMOB_USD_ENABLED: '0'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Build isolated production-mode application
+        run: npm run build
+      - name: Start local target with no production credentials or data
+        run: |
+          mkdir -p security-reports
+          git rev-parse HEAD > security-reports/revision.txt
+          npm run start -- --hostname 127.0.0.1 > security-reports/server.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/ar/login > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: OWASP ZAP baseline against loopback only
+        run: |
+          chmod 777 security-reports
+          docker pull ghcr.io/zaproxy/zaproxy:stable
+          docker image inspect ghcr.io/zaproxy/zaproxy:stable --format '{{index .RepoDigests 0}}' > security-reports/zap-image-digest.txt
+          docker run --rm --network host -v "$PWD/security-reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://127.0.0.1:3000/ar/login -m 1 -T 5 -I -r zap-baseline.html -J zap-baseline.json -w zap-baseline.md
+      - name: Preserve original DAST output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dast-zap-${{ github.sha }}
+          path: security-reports/
+          retention-days: 30
+          if-no-files-found: warn
+
+  dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Preserve npm advisory output and fail on high severity
+        run: |
+          mkdir -p security-reports
+          git rev-parse HEAD > security-reports/revision.txt
+          npm audit --json --audit-level=high > security-reports/npm-audit.json
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dependencies-${{ github.sha }}
+          path: security-reports/
+          retention-days: 30

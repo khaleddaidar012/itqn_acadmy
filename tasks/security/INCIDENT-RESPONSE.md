@@ -1,0 +1,11 @@
+# Incident management and response
+
+Introduced 27 October 2026. Incident owner: academy owner. Technical responder: project maintainer. Contact: academyiqtan3@gmail.com. No round-the-clock monitoring or guaranteed response time is asserted.
+
+1. **Receive and triage.** Record the discovery time, reporter, affected systems and observable impact in a private incident record. Ask for the minimum necessary evidence; never request passwords or tokens by email. Separate an ordinary integration outage from suspected unauthorized access while preserving uncertainty.
+2. **Contain.** Depending on the affected boundary, restrict the endpoint, disable the affected account or integration, revoke sessions/provider authorizations, or roll back the deployment. Prefer the smallest effective change. Record who authorized disruptive production actions and their time. Avoid destroying useful evidence.
+3. **Preserve evidence.** Retain relevant timestamps, deployment revision, bounded logs and a controlled database snapshot only where appropriate. Restrict access. Do not attach production personal data to public issues, CI artifacts or provider forms. Record what was collected and by whom.
+4. **Assess.** Identify affected accounts, data categories, time interval, root cause and whether access or disclosure actually occurred. Distinguish verified facts from hypotheses. The owner determines notification obligations with appropriate advice and provider requirements; this procedure invents no statutory deadline.
+5. **Eradicate and recover.** Patch the cause, replace compromised credentials, check restored data and test the affected authorization/attendance/payment boundaries in isolation. Deploy the corrected revision and confirm bounded production smoke checks. Monitor for recurrence and document restoration time.
+6. **Communicate.** The owner approves any notices to affected people, Zoom, hosting providers or authorities. Share verified, relevant facts and protective steps through the appropriate private channel. This document does not itself authorize the agent to send notices.
+7. **Learn.** Write a private post-incident review describing impact, timeline, cause, corrective actions, owners and follow-up verification. Update tests and procedures where the incident exposed a gap.
