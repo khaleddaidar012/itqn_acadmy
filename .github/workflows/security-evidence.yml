@@ -24,6 +24,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  cloudflare-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_SITE_URL: https://itqanquranacademy.com
+      WRANGLER_SEND_METRICS: 'false'
+      CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Build deployable Worker without production credentials
+        run: npm run build:cloudflare
+      - name: Package exact revision
+        run: |
+          printf '%s\n' "$GITHUB_SHA" > revision.txt
+          tar -czf cloudflare-worker.tgz .open-next
+          sha256sum cloudflare-worker.tgz > cloudflare-worker.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloudflare-worker-${{ github.sha }}
+          path: |
+            cloudflare-worker.tgz
+            cloudflare-worker.sha256
+            revision.txt
+          retention-days: 7
+          if-no-files-found: error
+
   retention:
     runs-on: ubuntu-latest
     timeout-minutes: 10
