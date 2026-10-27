@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import type { Locale } from '@/types'
 import { SiteShell } from '@/components/layout/SiteShell'
 import { LocaleAttributes } from '@/components/providers/LocaleAttributes'
+import { notFound } from 'next/navigation'
+
+export const dynamicParams = false
 
 type Props = {
   children: React.ReactNode
@@ -33,6 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale: rawLocale } = await params
+  if (rawLocale !== 'ar' && rawLocale !== 'en') notFound()
   const locale = (rawLocale === 'en' ? 'en' : 'ar') as Locale
 
   return <><LocaleAttributes locale={locale} /><SiteShell locale={locale}>{children}</SiteShell></>

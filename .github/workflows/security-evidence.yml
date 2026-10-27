@@ -12,6 +12,7 @@ on:
       - '.github/workflows/security-evidence.yml'
       - 'scripts/security/**'
       - 'tests/security-headers.mjs'
+      - 'tests/security-csrf.mjs'
 
 permissions:
   contents: read
@@ -82,6 +83,8 @@ jobs:
           exit 1
       - name: Verify CSP hydration compatibility and nonce isolation
         run: node tests/security-headers.mjs
+      - name: Verify authenticated CSRF rejection and real missing-file responses
+        run: node tests/security-csrf.mjs
       - name: OWASP ZAP baseline against loopback only
         run: |
           chmod 777 security-reports
