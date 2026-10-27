@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 const origin = process.env.SECURITY_TEST_ORIGIN || 'http://127.0.0.1:3000'
 assert.ok(['127.0.0.1', 'localhost'].includes(new URL(origin).hostname), 'Use an isolated loopback target')
 let previous
-for (const path of ['/ar/login', '/ar/login', '/en/login', '/ar']) {
+for (const path of ['/ar/login', '/ar/login', '/en/login', '/ar/register', '/ar']) {
   const response = await fetch(origin + path, { headers: { 'x-nonce': 'attacker-chosen-nonce', 'Content-Security-Policy': "script-src 'nonce-attacker-chosen-nonce'" } })
   assert.equal(response.status, 200)
   const policy = response.headers.get('content-security-policy') || ''
@@ -16,6 +16,7 @@ for (const path of ['/ar/login', '/ar/login', '/en/login', '/ar']) {
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff')
   assert.equal(response.headers.get('x-powered-by'), null)
   const html = await response.text()
+  for (const form of html.matchAll(/<form\b([^>]*)>/g)) assert.match(form[1], /method="post"/i, 'Forms must not fall back to GET and leak credentials in URLs')
   const scripts = [...html.matchAll(/<script\b([^>]*)>/g)]
   assert.ok(scripts.length > 0)
   for (const [, attributes] of scripts) assert.ok(attributes.includes(`nonce="${nonce}"`), 'Rendered scripts must agree with CSP, including the theme script')

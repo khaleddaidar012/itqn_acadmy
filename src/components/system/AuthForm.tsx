@@ -23,7 +23,7 @@ export default function AuthForm({ register, locale }: { register?: boolean; loc
       <p className="text-xs tracking-widest text-emerald-600 mt-8">إتقان • رحلة علم وأثر</p>
       <h1 className="text-3xl font-bold mt-3">{register ? 'ابدأ رحلتك التعليمية' : 'أهلًا بعودتك'}</h1>
       <p className="text-sm text-slate-500 mt-3 mb-8">{register ? 'التسجيل هنا للطلاب. تختار موادك، والإدارة ترتب جدولك مع المعلم المناسب.' : 'حساب واحد للدخول إلى مساحة الإدارة أو المعلم أو الطالب أو ولي الأمر.'}</p>
-      <form onSubmit={submit} className="space-y-5">
+      <form method="post" onSubmit={submit} className="space-y-5">
         {register && <label className="block">اسم الطالب<input name="name" required maxLength={100} autoComplete="name" className="system-input" /></label>}
         <label className="block">البريد الإلكتروني<input name="email" type="email" required autoComplete="email" dir="ltr" className="system-input" /></label>
         <label className="block">كلمة المرور<input name="password" type="password" required minLength={register ? 12 : 1} maxLength={256} autoComplete={register ? 'new-password' : 'current-password'} className="system-input" />{register && <span className="text-xs text-slate-500">12 حرفًا على الأقل</span>}</label>

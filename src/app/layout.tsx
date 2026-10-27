@@ -114,7 +114,7 @@ export default async function RootLayout({
         suppressHydrationWarning
         className={`${cairo.variable} ${inter.variable} font-arabic antialiased bg-[#f8fafc] dark:bg-[#0b1628] text-[#0f2744] dark:text-[#e8f0fb] transition-colors duration-200`}
       >
-        <ThemeProvider>
+        <ThemeProvider nonce={nonce}>
           {children}
         </ThemeProvider>
       </body>

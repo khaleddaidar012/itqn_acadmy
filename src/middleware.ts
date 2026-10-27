@@ -22,9 +22,10 @@ export function middleware(request: NextRequest) {
   const policy = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ''}`,
-    // React style attributes and Framer Motion require inline styles; scripts do not.
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
+    `style-src 'self' 'nonce-${nonce}'`,
+    // React/Framer Motion use style attributes; injected style elements need a nonce.
+    "style-src-attr 'unsafe-inline'",
+    "img-src 'self' data: blob:",
     "font-src 'self' data:",
     `connect-src 'self'${development ? ' ws: wss:' : ''}`,
     "object-src 'none'", "base-uri 'self'", "form-action 'self'",

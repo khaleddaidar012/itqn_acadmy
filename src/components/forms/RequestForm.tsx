@@ -142,7 +142,7 @@ export function RequestForm({ locale }: RequestFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'} noValidate>
+    <form method="post" onSubmit={handleSubmit} className="space-y-5" dir={isRTL ? 'rtl' : 'ltr'} noValidate>
       {/* Honeypot */}
       <input type="text" name="website_url" className="hidden" tabIndex={-1} aria-hidden="true" />
 
