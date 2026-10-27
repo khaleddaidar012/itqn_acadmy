@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from 'next'
 import { Cairo, Inter } from 'next/font/google'
 import '../styles/globals.css'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { headers } from 'next/headers'
+
+export const dynamic = 'force-dynamic'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -60,15 +63,17 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const nonce = (await headers()).get('x-nonce') || undefined
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               try {
