@@ -90,7 +90,7 @@ jobs:
           docker run --rm --network host -v "$PWD/security-reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://127.0.0.1:3000/ar/login -m 1 -T 5 -I -r zap-baseline.html -J zap-baseline.json -w zap-baseline.md
       - name: OWASP ZAP active scan against the isolated loopback target
         run: |
-          docker run --rm --network host -v "$PWD/security-reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py -t http://127.0.0.1:3000/ar/login -m 1 -T 10 -I -r zap-active.html -J zap-active.json -w zap-active.md
+          docker run --rm --network host -v "$PWD/security-reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py -t http://127.0.0.1:3000/ar/login -m 1 -T 10 -I -z "-config scanner.maxScanDurationInMins=5 -config scanner.maxRuleDurationInMins=1" -r zap-active.html -J zap-active.json -w zap-active.md
       - name: Reject high-risk dynamic findings without altering reports
         run: node scripts/security/check-dast.mjs security-reports/zap-active.json
       - name: Preserve original DAST output
