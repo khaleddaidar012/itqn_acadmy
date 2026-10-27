@@ -51,7 +51,7 @@ jobs:
     timeout-minutes: 25
     env:
       ITQAN_USE_D1: '0'
-      ITQAN_DATA_DIR: ${{ runner.temp }}/itqan-security-data
+      ITQAN_DATA_DIR: /tmp/itqan-security-data
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       ITQAN_ADMIN_EMAIL: admin@security-test.invalid
       ITQAN_ADMIN_PASSWORD: isolated-security-test-only-2026
