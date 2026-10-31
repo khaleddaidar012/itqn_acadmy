@@ -43,6 +43,7 @@ jobs:
       - name: Verify lesson workflow and actual Worker endpoints
         run: |
           node --experimental-strip-types tests/lesson-workflow.mjs
+          node --experimental-strip-types tests/week-layout.mjs
           npm run test:system:worker
           npm run test:retention:worker
       - name: Package exact revision
