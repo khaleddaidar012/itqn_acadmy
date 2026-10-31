@@ -2,7 +2,6 @@ import { db } from '@/lib/system/db'
 import { ServiceError } from '@/lib/system/service-http'
 import { callZoom, teacherToken as refreshTeacherToken, ZoomTransportError } from './transport'
 import { zoomConfiguration, type ZoomConfig } from './client'
-import { queueMeetingEnd } from './auto-end'
 
 export function meetingConfiguration() {
   const { config } = zoomConfiguration()
@@ -24,7 +23,7 @@ export function safeZoomUrl(value: unknown) {
 export async function ensureMeeting(lesson: {id:number;teacher_id:number;subject:string;start:string;duration:number}) {
   const config = meetingConfiguration()
   let stored = await db().prepare('SELECT * FROM zoom_meetings WHERE lesson_id=?').get(lesson.id)
-  if (stored?.state==='ready') { await queueMeetingEnd(db(),lesson.id,lesson.start,lesson.duration); return stored }
+  if (stored?.state==='ready') return stored
   if (stored) throw new ServiceError('إنشاء الاجتماع قيد المراجعة. لا تنشئ اجتماعًا ثانيًا؛ تواصل مع الإدارة.',409)
   if((await db().prepare('SELECT joined FROM lessons WHERE id=?').get(lesson.id))?.joined) throw new ServiceError('هذه الحصة بدأت بالتسجيل اليدوي. استكملها بالطريقة نفسها.',409)
   const auth = await teacherToken(lesson.teacher_id,config)
@@ -44,7 +43,6 @@ export async function ensureMeeting(lesson: {id:number;teacher_id:number;subject
     const saved = await db().prepare("UPDATE zoom_meetings SET meeting_id=?,join_url=?,host_id=?,account_id=?,state='ready' WHERE lesson_id=? AND state='creating' RETURNING *").get(String(data.id),joinUrl,connection.zoom_user_id,connection.account_id,lesson.id)
     if (!saved) throw new ServiceError('تعذر حفظ اجتماع Zoom. راجع الإدارة قبل المحاولة مجددًا.',502)
     stored = saved
-    await queueMeetingEnd(db(),lesson.id,lesson.start,lesson.duration)
     return stored
   } catch (error) {
     await db().prepare("UPDATE zoom_meetings SET state='uncertain' WHERE lesson_id=? AND state='creating'").run(lesson.id)
@@ -69,5 +67,4 @@ export async function reconcileMeeting(lesson:{id:number;teacher_id:number;start
   const data=await response.json()
   if(data.host_id!==connection.zoom_user_id || String(data.id)!==meetingId || data.agenda!=='ITQAN lesson '+lesson.id || Date.parse(data.start_time)!==Date.parse(lesson.start) || data.duration!==lesson.duration) throw new ServiceError('الاجتماع لا يطابق الحصة أو حساب معلمها',409)
   await db().prepare("UPDATE zoom_meetings SET meeting_id=?,join_url=?,host_id=?,account_id=?,state='ready' WHERE lesson_id=? AND state<>'ready'").run(meetingId,safeZoomUrl(data.join_url),connection.zoom_user_id,connection.account_id,lesson.id)
-  await queueMeetingEnd(db(),lesson.id,lesson.start,lesson.duration)
 }

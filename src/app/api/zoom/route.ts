@@ -14,7 +14,7 @@ export async function GET() {
     if (user.role !== 'admin' && (user.role !== 'teacher' || user.can_teach !== 1)) throw new ServiceError('ربط Zoom متاح للمعلمين فقط', 403)
     const connection = await db().prepare('SELECT email,connected,expires FROM zoom_connections WHERE user_id=?').get(user.id)
     const { config } = zoomConfiguration()
-    return NextResponse.json({ configured: !!config, canConnect: user.role === 'teacher', autoEndEnabled:process.env.ZOOM_AUTO_END==='1', connection: connection || null }, { headers })
+    return NextResponse.json({ configured: !!config, canConnect: user.role === 'teacher', autoEndEnabled:false, connection: connection || null }, { headers })
   } catch (error) { return serviceError(error) }
 }
 export async function POST(request: NextRequest) {

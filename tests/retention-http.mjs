@@ -13,8 +13,8 @@ async function request(path,cookie='',body,status=200,requestOrigin=origin){cons
 try{
  let ready=false;for(let n=0;n<100;n++){try{if((await fetch(origin+'/ar/login')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,500))}assert.ok(ready,logs)
  const adminResponse=await request('/api/system','',{action:'login',email:env.ITQAN_ADMIN_EMAIL,password}),admin=adminResponse.headers.get('set-cookie').split(';')[0]
- const registration=await request('/api/system','',{action:'register',name:'Closure fixture',email:'student@retention.test',password,subjects:['حفظ القرآن']}),student=registration.headers.get('set-cookie').split(';')[0],id=(await registration.json()).user.id
- const otherResponse=await request('/api/system','',{action:'register',name:'Other fixture',email:'other@retention.test',password,subjects:['حفظ القرآن']}),other=otherResponse.headers.get('set-cookie').split(';')[0]
+ const registration=await request('/api/system','',{action:'register',whatsapp:'+201012345678',name:'Closure fixture',email:'student@retention.test',password,subjects:['حفظ القرآن']}),student=registration.headers.get('set-cookie').split(';')[0],id=(await registration.json()).user.id
+ const otherResponse=await request('/api/system','',{action:'register',whatsapp:'+201012345678',name:'Other fixture',email:'other@retention.test',password,subjects:['حفظ القرآن']}),other=otherResponse.headers.get('set-cookie').split(';')[0]
  const body={student_id:id,confirm:true}
  await request('/api/privacy','',undefined,401)
  await request('/api/privacy',student,undefined,403)

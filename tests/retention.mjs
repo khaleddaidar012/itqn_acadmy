@@ -20,6 +20,7 @@ const db={
 try {
  const now=new Date(),at=now.toISOString(),past=new Date(now.getTime()-7*86400000).toISOString(),future=new Date(now.getTime()+86400000).toISOString()
  sql.exec("INSERT INTO users(id,name,email,password,role) VALUES(1,'Admin','admin@example.test','hash','admin'),(2,'Tutor','tutor@example.test','hash','teacher'),(3,'Erased pupil','erased@example.test','private-password-hash','student'),(4,'Other pupil','other@example.test','hash','student');INSERT INTO sessions VALUES('private-session',3,9999999999999),('other-session',4,9999999999999)")
+ sql.prepare('UPDATE users SET whatsapp=? WHERE id=3').run('+201099999999')
  const lesson=sql.prepare("INSERT INTO lessons(id,teacher_id,student_id,subject,start,duration,rate,currency,joined,left_at,note) VALUES(?,2,?,'حفظ القرآن',?,60,120,'EGP',?,?,?)")
  const start=Date.parse(past)
  lesson.run(101,3,past,past,new Date(start+3600000).toISOString(),'private-lesson-note')
@@ -86,6 +87,7 @@ try {
  // Restoring an older export applies CURRENT erasures before returning a database.
  const erasedLedger=await privacyLedger(db),target=join(temp,'purged-restored.sqlite')
  await restoreBackup(file,target,erasedLedger)
+ assert.equal(sql.prepare('SELECT whatsapp FROM users WHERE id=3').get().whatsapp,'')
  const erased=new DatabaseSync(target);assert.equal(erased.prepare('SELECT password FROM users WHERE id=3').get().password,'');assert.equal(erased.prepare('SELECT COUNT(*) n FROM lessons WHERE student_id=3').get().n,0);assert.equal(erased.prepare('SELECT SUM(earned) n FROM retained_teacher_totals').get().n,40);erased.close()
  // Expired exports fail even with a current correct ledger.
  const envelope=JSON.parse(data),payload=JSON.parse(envelope.payload);payload.created=new Date(now.getTime()-31*86400000).toISOString();envelope.payload=JSON.stringify(payload)

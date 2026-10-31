@@ -18,7 +18,7 @@ interface CheckoutModalProps {
 
 const TIMER_STORAGE_KEY = 'itqan_payment_timer_start'
 const TIMER_PLAN_KEY = 'itqan_payment_timer_plan_id'
-const DURATION_SECONDS = 120
+const DURATION_SECONDS = 10
 
 export function CheckoutModal({
   plan,
@@ -314,7 +314,7 @@ Thank you.`
           </div>
         </div>
 
-        {/* ── Two-Minute Confirmation Timer Flow ──── */}
+        {/* ── Ten-Second Confirmation Timer Flow ──── */}
         {!timerActive ? (
           <div className="pt-2">
             <button
@@ -353,7 +353,7 @@ Thank you.`
               )}
             </div>
 
-            {/* "تم التحويل" Button — strictly enabled after 120s */}
+            {/* "تم التحويل" Button — strictly enabled after 10s */}
             <button
               type="button"
               disabled={secondsLeft > 0}

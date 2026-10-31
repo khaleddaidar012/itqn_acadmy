@@ -142,7 +142,7 @@ const en = {
     importantNote: 'Notice: After sending the payment, please take a screenshot and send it via WhatsApp to verify your transfer and finalize enrollment.',
     initiateTransferBtn: 'I initiated the payment — Start Confirmation Timer',
     timerTitle: 'Please Complete Your Payment',
-    timerDesc: 'To provide enough time to complete your mobile wallet or bank transfer, please wait 2 minutes, then click "Transfer Done" to open the official academy WhatsApp conversation.',
+    timerDesc: 'To provide enough time to complete your mobile wallet or bank transfer, please wait 10 seconds, then click "Transfer Done" to open the official academy WhatsApp conversation.',
     remainingTime: 'Time remaining to enable button:',
     btnWaiting: 'Waiting for transfer completion...',
     btnConfirmed: 'Transfer Done — Send Details via WhatsApp',

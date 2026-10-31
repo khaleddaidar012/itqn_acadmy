@@ -40,6 +40,11 @@ jobs:
       - run: npm ci
       - name: Build deployable Worker without production credentials
         run: npm run build:cloudflare
+      - name: Verify lesson workflow and actual Worker endpoints
+        run: |
+          node --experimental-strip-types tests/lesson-workflow.mjs
+          npm run test:system:worker
+          npm run test:retention:worker
       - name: Package exact revision
         run: |
           printf '%s\n' "$GITHUB_SHA" > revision.txt

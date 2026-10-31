@@ -44,7 +44,7 @@ export default function ZoomSettings({ locale }: { locale: string }) {
   }
   return <section className="bg-white rounded-2xl border p-6 mb-6 max-w-2xl"><h2 className="text-xl font-bold">ربط حساب Zoom</h2>
     <p className="text-sm text-slate-600 mt-3 leading-7">كل مدرس يربط حسابه بنفسه من صفحة Zoom الرسمية. لا تطلب الأكاديمية كلمة مرور Zoom. التفويض يُحفظ مشفّرًا على الخادم ويمكن إلغاؤه من هنا أو من حساب Zoom.</p>
-    <p className="text-sm text-slate-500 mt-2 leading-7">يمكن تجهيز اجتماع لكل حصة من جدولك، ثم فتحه من خمس دقائق قبل الموعد. يسجّل Zoom دخولك وخروجك لحساب وقت الحضور الفعلي. بعد إضافة صلاحيات الاجتماعات اضغط تحديث صلاحيات Zoom ووافق بنفس الحساب المربوط.</p>
+    <p className="text-sm text-slate-500 mt-2 leading-7">للحِصص الجديدة اضغط جهّز الحصة قبل الموعد بخمس دقائق، ثم الصق رابط دعوة المشاركين. هذا المسار لا يحتاج ربط حساب Zoom. الربط أدناه للحصص القديمة. لا يغلق النظام اجتماع Zoom تلقائيًا.</p>
     {status?.autoEndEnabled && <p className="text-sm text-amber-800 mt-2 leading-7">الإغلاق التلقائي مفعّل: يُطلب إنهاء الاجتماع عند نهاية مدة الحصة بفحص كل دقيقة. يلزم الموافقة على صلاحية إنهاء الاجتماعات، وقد يتأخر الإغلاق مع انقطاع الاتصال. احتساب الأجر يتوقف عند الموعد المحدد.</p>}
     {error && <p role="alert" className="bg-red-50 text-red-700 rounded-xl p-3 mt-4">{error}</p>}
     {notice && <p role="status" className="text-emerald-800 bg-emerald-50 rounded-xl p-3 mt-4">{notice}</p>}

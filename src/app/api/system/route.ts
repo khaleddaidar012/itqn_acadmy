@@ -5,6 +5,7 @@ import { currentUser } from '@/lib/system/auth'
 import { accounting, type Lesson } from '@/lib/system/accounting'
 import { allowed, grants, PERMISSIONS, DEFAULT_MANAGER, type Permission } from '@/lib/system/permissions'
 import { presenceIntervals, presenceMinutes, type AttendanceEvent } from '@/lib/zoom/attendance'
+import { whatsappNumber } from '@/lib/system/phone'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,13 +33,13 @@ async function scheduleQuery(input: Record<string, unknown>): Promise<Query> {
   const startMs = Date.parse(str(input.start)); const duration = number(input.duration, 5, 180)
   if (!Number.isInteger(duration) || !Number.isFinite(startMs) || startMs < Date.now()) fail('اختر موعدًا مستقبليًا ومدة صحيحة')
   const start = new Date(startMs).toISOString()
-  return { sql: 'INSERT INTO lessons(teacher_id,student_id,subject,start,duration,rate,currency) SELECT id,?,?,?,?,rate,currency FROM users WHERE id=?', values: [student.id, subject, start, duration, teacher.id] }
+  return { sql: 'INSERT INTO lessons(teacher_id,student_id,subject,start,duration,rate,currency,workflow_version) SELECT id,?,?,?,?,rate,currency,1 FROM users WHERE id=?', values: [student.id, subject, start, duration, teacher.id] }
 }
 export async function GET() {
   try {
     const user = await currentUser(); if (!user) fail('سجّل الدخول أولًا', 401)
     const users = user.role === 'admin' || allowed(user, 'students_manage')
-      ? await db().prepare("SELECT id,name,email,role,manage,can_teach,subjects,parent_id,pages,permissions,disabled,enrollment_status,EXISTS(SELECT 1 FROM payment_orders p WHERE p.student_id=users.id AND p.mode='live' AND p.status='paid') AS payment_confirmed FROM users WHERE disabled=0 ORDER BY id DESC").all()
+      ? await db().prepare("SELECT id,name,email,whatsapp,role,manage,can_teach,subjects,parent_id,pages,permissions,disabled,enrollment_status,EXISTS(SELECT 1 FROM payment_orders p WHERE p.student_id=users.id AND p.mode='live' AND p.status='paid') AS payment_confirmed FROM users WHERE disabled=0 ORDER BY id DESC").all()
       : manager(user) || allowed(user, 'reports_manage') ? await db().prepare("SELECT id,name,role,manage,can_teach,subjects,pages,enrollment_status FROM users WHERE disabled=0 AND role IN ('student','teacher') AND (role!='student' OR enrollment_status='active')").all()
       : user.role === 'parent' ? await db().prepare("SELECT id,name,role,pages,subjects,enrollment_status FROM users WHERE parent_id=? AND disabled=0 AND enrollment_status='active'").all(user.id)
       : user.role === 'teacher' ? await db().prepare('SELECT id,name,role,can_teach,pages,subjects,enrollment_status FROM users WHERE id=? OR id IN (SELECT student_id FROM lessons WHERE teacher_id=?)').all(user.id, user.id)
@@ -51,13 +52,19 @@ export async function GET() {
     for(const lesson of all) {
       const events=eventsByLesson.get(lesson.id)
       lesson.zoom_meeting=zoomMeetings.has(lesson.id) || !!events
-      if(lesson.zoom_meeting) {
+      if(lesson.zoom_meeting && lesson.workflow_version !== 1) {
         lesson.zoom_intervals=presenceIntervals(events||[],'teacher')
         const intervals=lesson.zoom_intervals
         lesson.joined=intervals.length ? new Date(Math.min(...intervals.map(i=>i[0]))).toISOString() : null
         lesson.left_at=intervals.length && intervals.every(i=>i[1]!==null) ? new Date(Math.max(...intervals.map(i=>i[1] as number))).toISOString() : null
         lesson.student_zoom_minutes=presenceMinutes(presenceIntervals(events||[],'student'),Date.parse(lesson.start),Date.parse(lesson.start)+lesson.duration*60000,Date.now())
       }
+    }
+    // Meeting passwords are returned only by the authorized launch action, never in lists/exports.
+    for (const lesson of all) {
+      const row = lesson as unknown as Record<string, unknown>
+      lesson.meeting_ready = !!row.meeting_link
+      delete row.meeting_link
     }
     const studentIds = new Set(users.filter(u => u?.role === 'student').map(u => Number(u?.id)))
     const lessons = all.filter(l => manager(user) || user.role === 'teacher' && l.teacher_id === user.id || user.role === 'student' && l.student_id === user.id || user.role === 'parent' && studentIds.has(l.student_id)).map(l => {
@@ -103,8 +110,10 @@ export async function POST(request: NextRequest) {
       if (action === 'register') {
         const name = str(body.name, 100); if (!name || password.length < 12) fail('أدخل الاسم وكلمة مرور لا تقل عن 12 حرفًا')
         const courses = selected(body.subjects)
+        let whatsapp: string
+        try { whatsapp=whatsappNumber(body.whatsapp) } catch(error) { fail((error as Error).message) }
         if (await db().prepare('SELECT id FROM users WHERE email=?').get(email)) fail('البريد مسجل بالفعل')
-        id = Number((await db().prepare("INSERT INTO users(name,email,password,role,subjects,enrollment_status) VALUES(?,?,?,'student',?,'pending')").run(name, email, hashPassword(password), courses)).lastInsertRowid)
+        id = Number((await db().prepare("INSERT INTO users(name,email,password,role,subjects,enrollment_status,whatsapp) VALUES(?,?,?,'student',?,'pending',?)").run(name, email, hashPassword(password), courses,whatsapp)).lastInsertRowid)
       } else {
         const account = await db().prepare('SELECT id,password,disabled FROM users WHERE email=?').get(email) as { id: number; password: string; disabled: number } | undefined
         if (!account || account.disabled || !checkPassword(password, account.password)) fail('البريد أو كلمة المرور غير صحيحة', 401)
@@ -163,8 +172,10 @@ export async function POST(request: NextRequest) {
       if (!allowed(user, 'students_manage')) fail('لا تملك صلاحية إضافة الطلاب', 403)
       const name = str(body.name, 100); const email = str(body.email, 254).toLowerCase(); const password = str(body.password, 256); const courses = selected(body.subjects)
       if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 12) fail('أكمل الاسم والبريد وكلمة المرور من 12 حرفًا')
+      let whatsapp=''
+      if(body.whatsapp) { try { whatsapp=whatsappNumber(body.whatsapp) } catch(error) { fail((error as Error).message) } }
       if (await db().prepare('SELECT id FROM users WHERE email=?').get(email)) fail('البريد مستخدم بالفعل')
-      await db().prepare("INSERT INTO users(name,email,password,role,subjects,enrollment_status) VALUES(?,?,?,'student',?,'active')").run(name, email, hashPassword(password), courses)
+      await db().prepare("INSERT INTO users(name,email,password,role,subjects,enrollment_status,whatsapp) VALUES(?,?,?,'student',?,'active',?)").run(name, email, hashPassword(password), courses,whatsapp)
     } else if (action === 'approveStudent') {
       if (!allowed(user, 'students_manage')) fail('لا تملك صلاحية تأكيد الطلاب', 403)
       const student = await safeUser(number(body.id, 1, 1e9)); if (student?.role !== 'student' || student.disabled) fail('الطالب غير موجود')
@@ -190,9 +201,26 @@ export async function POST(request: NextRequest) {
       if (!starts.length || starts.length > 12) fail('الحد الأقصى 12 أسبوعًا في المرة الواحدة')
       const queries = await Promise.all(starts.map(start => scheduleQuery({ ...body, start })))
       await db().batch(queries)
+    } else if (action === 'completeLesson') {
+      const lesson = await lessonById(body.id)
+      if (user.role !== 'teacher' || user.can_teach !== 1 || lesson.teacher_id !== user.id) fail('إنهاء الحصة لمعلمها فقط',403)
+      if (lesson.workflow_version !== 1 || !lesson.joined || lesson.completed_at || !['scheduled','attended','absent','late_cancelled'].includes(lesson.status) || Date.now() < Date.parse(lesson.start)) fail('الحصة غير متاحة للإنهاء')
+      const note = str(body.note,2000), homework = str(body.homework,2000)
+      if (!note || !homework) fail('وثّق تقدم الطالب واكتب الواجب قبل إنهاء الحصة')
+      const status = str(body.status)
+      if (!['attended','absent'].includes(status)) fail('حدد حضور الطالب')
+      const pages = lesson.subject === 'حفظ القرآن' ? number(body.pages,0,604) : (await safeUser(lesson.student_id))!.pages
+      if (!Number.isInteger(pages)) fail('عدد الصفحات يجب أن يكون صحيحًا')
+      const at = new Date().toISOString()
+      await db().batch([
+        {sql:'INSERT INTO progress(student_id,teacher_id,lesson_id,pages,note,created) SELECT student_id,teacher_id,id,?,?,? FROM lessons WHERE id=? AND completed_at IS NULL',values:[pages,note+'\n\nالواجب: '+homework,at,lesson.id]},
+        ...(lesson.subject === 'حفظ القرآن' ? [{sql:'UPDATE users SET pages=? WHERE id=? AND EXISTS(SELECT 1 FROM lessons WHERE id=? AND completed_at IS NULL)',values:[pages,lesson.student_id,lesson.id]}] : []),
+        {sql:'UPDATE lessons SET completed_at=?,left_at=?,completion_note=?,homework=?,status=? WHERE id=? AND completed_at IS NULL',values:[at,at,note,homework,status,lesson.id]},
+      ])
     } else if (action === 'join' || action === 'leave') {
       const lesson = await lessonById(body.id)
       if (user.role !== 'teacher' || lesson.teacher_id !== user.id) fail('هذه الحصة ليست لك', 403)
+      if (lesson.workflow_version === 1) fail('استخدم تجهيز الحصة وإنهاء الحصة مع التوثيق')
       if(await db().prepare('SELECT lesson_id FROM zoom_meetings WHERE lesson_id=?').get(lesson.id)) fail('حضور هذه الحصة يسجله Zoom تلقائيًا؛ استخدم زر دخول Zoom.')
       const now = Date.now(); const start = Date.parse(lesson.start); const end = start + lesson.duration * 60000
       if (!['scheduled', 'attended', 'absent', 'late_cancelled'].includes(lesson.status)) fail('الحصة غير متاحة')
@@ -224,6 +252,7 @@ export async function POST(request: NextRequest) {
     } else if (action === 'attendance') {
       const lesson = await lessonById(body.id)
       if (!allowed(user, 'attendance_manage') && !(user.role === 'teacher' && lesson.teacher_id === user.id)) fail('غير مسموح', 403)
+      if (lesson.completed_at) fail('تم اعتماد حضور الحصة عند إنهائها')
       if (!['scheduled', 'attended', 'absent'].includes(lesson.status) || Date.now() < Date.parse(lesson.start)) fail('لا يمكن تعديل حضور هذه الحصة')
       const status = str(body.status); if (!['attended', 'absent'].includes(status)) fail('الحالة غير صحيحة')
       await db().prepare('UPDATE lessons SET status=? WHERE id=?').run(status, lesson.id)
@@ -253,6 +282,7 @@ export async function POST(request: NextRequest) {
     } else if (action === 'progress') {
       const lesson = await lessonById(body.id)
       if (user.role !== 'teacher' || lesson.teacher_id !== user.id) fail('توثيق التقدم لمعلم الحصة فقط', 403)
+      if (lesson.workflow_version === 1) fail('احفظ التقدم والواجب من زر إنهاء الحصة')
       if (!lesson.joined || !['scheduled', 'attended'].includes(lesson.status) || lesson.subject !== 'حفظ القرآن') fail('التوثيق لحصة حفظ حضرها المعلم')
       const pages = number(body.pages, 0, 604); if (!Number.isInteger(pages)) fail('عدد الصفحات يجب أن يكون صحيحًا')
       const note = str(body.note, 2000); if (!note) fail('اكتب تفاصيل الحفظ والمراجعة')

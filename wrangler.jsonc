@@ -24,7 +24,7 @@
   ],
   "vars": {
     "ITQAN_USE_D1": "1",
-    "ZOOM_AUTO_END": "1",
+    "ZOOM_AUTO_END": "0",
     "ITQAN_CANCEL_HOURS": "12",
     "ITQAN_MEETING_PROVIDER": "zoom",
     "NEXT_PUBLIC_SITE_URL": "https://itqanquranacademy.com",

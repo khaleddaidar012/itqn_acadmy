@@ -9,8 +9,9 @@ export async function receiveMeetingEvent(body: Record<string, any>) {
   const kind=Object.hasOwn(kinds,body.event)?kinds[body.event]:undefined; if(!kind) return
   const object=body.payload?.object
   if(!object || !/^\d+$/.test(String(object.id)) || typeof object.uuid!=='string' || !object.uuid || object.uuid.length>256) return {event:body.event,reason:'invalid_meeting'}
-  const meeting=await db().prepare("SELECT m.*,l.start,l.duration,l.student_id,s.email AS student_email,z.zoom_user_hash AS student_zoom_hash FROM zoom_meetings m JOIN lessons l ON l.id=m.lesson_id JOIN users s ON s.id=l.student_id LEFT JOIN zoom_student_links z ON z.student_id=l.student_id WHERE m.meeting_id=? AND m.state='ready'").get(String(object.id))
+  const meeting=await db().prepare("SELECT m.*,l.start,l.duration,l.student_id,l.workflow_version,s.email AS student_email,z.zoom_user_hash AS student_zoom_hash FROM zoom_meetings m JOIN lessons l ON l.id=m.lesson_id JOIN users s ON s.id=l.student_id LEFT JOIN zoom_student_links z ON z.student_id=l.student_id WHERE m.meeting_id=? AND m.state='ready'").get(String(object.id))
   if(!meeting) return {event:body.event,reason:'unknown_meeting'}
+  if(meeting.workflow_version===1) return {event:body.event,reason:'manual_lesson'}
   if(body.payload.account_id!==meeting.account_id || object.host_id!==meeting.host_id) return {event:body.event,reason:'owner_mismatch'}
   const participant=object.participant
   let actor='meeting', participantKey='meeting', joined:number|null=null

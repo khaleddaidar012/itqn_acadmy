@@ -14,6 +14,7 @@ export async function POST(request:NextRequest) {
     if(!Number.isSafeInteger(id) || id<1 || !['prepare','launch','reconcile'].includes(body.action)) throw new ServiceError('طلب غير صحيح')
     const lesson=await db().prepare('SELECT l.*,s.parent_id FROM lessons l JOIN users s ON s.id=l.student_id JOIN users t ON t.id=l.teacher_id WHERE l.id=? AND s.disabled=0 AND t.disabled=0').get(id)
     if(!lesson) throw new ServiceError('الحصة غير متاحة',404)
+    if(lesson.workflow_version===1) throw new ServiceError('استخدم زر جهّز الحصة والصق رابط الاجتماع')
     if(body.action==='reconcile') {
       if(!allowed(user,'schedule_manage')) throw new ServiceError('مراجعة الاجتماع لمسؤول الجداول فقط',403)
       if(!await rateLimit('zoom-meeting:'+user.id)) throw new ServiceError('محاولات كثيرة',429)

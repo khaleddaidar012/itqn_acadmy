@@ -42,7 +42,7 @@ export async function runRetention(database: RetentionDatabase, storage: BackupS
     for (const row of snapshot.lessons.filter(l => l.student_id === id)) {
       const lesson = row as unknown as Lesson
       const events = snapshot.zoom_attendance_events.filter(e => e.lesson_id === lesson.id) as unknown as AttendanceEvent[]
-      if (events.length || snapshot.zoom_meetings.some(m => m.lesson_id === lesson.id)) lesson.zoom_intervals = presenceIntervals(events, 'teacher')
+      if (lesson.workflow_version !== 1 && (events.length || snapshot.zoom_meetings.some(m => m.lesson_id === lesson.id))) lesson.zoom_intervals = presenceIntervals(events, 'teacher')
       const pay = accounting(lesson, now.getTime())
       const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit' }).formatToParts(new Date(lesson.start))
       const month = `${parts.find(p=>p.type==='year')!.value}-${parts.find(p=>p.type==='month')!.value}`
@@ -78,7 +78,7 @@ export async function runRetention(database: RetentionDatabase, storage: BackupS
     add(`DELETE FROM system_settings WHERE key LIKE 'zoom_webhook_last:%' AND ${guard}`)
     // Keep an unidentifiable disabled ID tombstone to prevent ID reuse and to apply
     // the deletion ledger to old exports. No original name/email/password remains.
-    add(`UPDATE users SET name='حساب محذوف',email=?,password='',subjects='[]',parent_id=NULL,pages=0,permissions=NULL,manage=0,rate=0,disabled=1 WHERE id=? AND ${guard}`, [`deleted-${randomUUID()}@invalid.local`,id])
+    add(`UPDATE users SET name='حساب محذوف',email=?,password='',whatsapp='',subjects='[]',parent_id=NULL,pages=0,permissions=NULL,manage=0,rate=0,disabled=1 WHERE id=? AND ${guard}`, [`deleted-${randomUUID()}@invalid.local`,id])
     add(`UPDATE account_closures SET purged_at=?,purge_owner=NULL,lease_until=0 WHERE student_id=? AND ${guard}`, [at,id])
     await database.batch(queries)
     purged++

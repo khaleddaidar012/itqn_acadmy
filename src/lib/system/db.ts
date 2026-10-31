@@ -12,7 +12,7 @@ import { zoomEndSchema } from '@/lib/zoom/end-schema'
 import { zoomStudentSchema } from '@/lib/zoom/student-schema'
 import { backupStorageSchema } from './backup-storage-schema'
 import { retentionSchema } from './retention-schema'
-export type User = { id: number; name: string; email: string; role: 'admin' | 'teacher' | 'student' | 'parent'; manage: number; can_teach?: number; rate: number; currency: string; subjects: string; parent_id: number | null; pages: number; permissions?: string | null; disabled?: number; payment_confirmed?: number; enrollment_status?: 'pending' | 'active' }
+export type User = { id: number; name: string; email: string; role: 'admin' | 'teacher' | 'student' | 'parent'; manage: number; can_teach?: number; rate: number; currency: string; subjects: string; parent_id: number | null; pages: number; permissions?: string | null; disabled?: number; payment_confirmed?: number; enrollment_status?: 'pending' | 'active'; whatsapp?: string }
 type Value = string | number | null
 type Row = Record<string, Value>
 export type Query = { sql: string; values: Value[] }
@@ -43,6 +43,12 @@ async function connection(): Promise<LocalDatabase | D1Database> {
     if (!columns.has('can_teach')) {
       database.exec("ALTER TABLE users ADD COLUMN can_teach INTEGER NOT NULL DEFAULT 1 CHECK(can_teach IN (0,1)); UPDATE users SET can_teach=0 WHERE role='teacher' AND manage=1 AND rate=0 AND id NOT IN (SELECT teacher_id FROM lessons)")
     }
+    const lessonColumns = new Set(database.prepare('PRAGMA table_info(lessons)').all().map(c => c.name))
+    for (const [name, type] of Object.entries({workflow_version:'INTEGER NOT NULL DEFAULT 0',meeting_link:'TEXT',prepared_at:'TEXT',completed_at:'TEXT',completion_note:'TEXT',homework:'TEXT'})) {
+      if (!lessonColumns.has(name)) database.exec(`ALTER TABLE lessons ADD COLUMN ${name} ${type}`)
+    }
+    if (!lessonColumns.has('workflow_version')) database.exec("UPDATE lessons SET workflow_version=1 WHERE joined IS NULL AND status='scheduled' AND julianday(start)>julianday('now')")
+    if (!columns.has('whatsapp')) database.exec("ALTER TABLE users ADD COLUMN whatsapp TEXT NOT NULL DEFAULT ''")
     database.exec(staffRules + excuseSchema + paymentSchema + servicesSchema + subscriptionsSchema + zoomSchema + zoomMeetingsSchema + zoomEndSchema + zoomStudentSchema + backupStorageSchema + retentionSchema)
     return database
   })()

@@ -26,6 +26,7 @@ export async function createBackup(database: BackupDatabase, storage: BackupStor
   if (!claim) return null
   try {
     const tables = await database.snapshot(BACKUP_TABLES)
+    tables.lessons = tables.lessons.map(({meeting_link: _link, ...lesson}) => lesson)
     // Restore never brings back old public report links.
     tables.report_shares = tables.report_shares.map(r => ({ ...r, revoked: 1 }))
     const expires = Math.min(now.getTime() + 30 * 86400000, ...tables.account_closures.filter(c => !c.purged_at).map(c => Date.parse(String(c.purge_at))))

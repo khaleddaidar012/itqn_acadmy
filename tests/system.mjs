@@ -40,7 +40,7 @@ try {
   }
   await request(null, '', 401)
   const admin = await request({ action: 'login', email: 'admin@test.example', password })
-  const student = await request({ action: 'register', name: 'طالب اختبار', email: 'student@test.example', password, subjects: ['حفظ القرآن'], role: 'admin' })
+  const student = await request({ action: 'register', whatsapp: '+201012345678', name: 'طالب اختبار', email: 'student@test.example', password, subjects: ['حفظ القرآن'], role: 'admin' })
   assert.equal(student.data.user.enrollment_status, 'pending');
   assert.equal((await request(null, student.cookie)).data.lessons.length, 0);
   assert.equal(student.data.user.role, 'student', 'Public registration cannot choose an elevated role')
@@ -51,7 +51,7 @@ try {
   const teacher = await request({ action: 'login', email: 'teacher@test.example', password })
   const parent = await request({ action: 'login', email: 'parent@test.example', password })
   const teacher2 = await request({ action: 'login', email: 'teacher2@test.example', password })
-  const another = await request({ action: 'register', name: 'طالب آخر', email: 'other@test.example', password, subjects: ['حفظ القرآن'] })
+  const another = await request({ action: 'register', whatsapp: '+201012345678', name: 'طالب آخر', email: 'other@test.example', password, subjects: ['حفظ القرآن'] })
   await request({ action: 'linkParent', student_id: student.data.user.id, parent_id: parent.data.user.id }, admin.cookie)
   const start = new Date(Date.now() + 48 * 3600000).toISOString()
   const schedule = { action: 'schedule', teacher_id: teacher.data.user.id, student_id: student.data.user.id, subject: 'حفظ القرآن', start, duration: 60 }
@@ -108,6 +108,55 @@ try {
   const sqliteFile = d1 ? readdirSync(dir, { recursive: true }).find(f => String(f).endsWith('.sqlite') && !String(f).endsWith('metadata.sqlite')) : 'itqan.sqlite'
   assert.ok(sqliteFile, 'Test database exists')
   const database = new DatabaseSync(join(dir, String(sqliteFile)))
+  // New manual flow: server-side ownership/time/link gates, no OAuth requirement,
+  // atomic completion+homework and no unearned compensation in reports.
+  const manualStart = new Date(Date.now()+16*86400000).toISOString()
+  await request({...schedule,teacher_id:teacher2.data.user.id,student_id:another.data.user.id,start:manualStart,duration:30},admin.cookie)
+  const manualId=(await request(null,admin.cookie)).data.lessons.find(l=>l.start===manualStart).id
+  const manual = async (body,cookie,expected=200,from=origin) => {
+    const r=await fetch(origin+'/api/lessons',{method:'POST',headers:{Cookie:cookie,Origin:from,'Content-Type':'application/json'},body:JSON.stringify({id:manualId,...body})})
+    const result=await r.json();assert.equal(r.status,expected,JSON.stringify(result));return result
+  }
+  await manual({action:'prepare'},teacher2.cookie,400)
+  await manual({action:'prepare'},teacher.cookie,403)
+  await manual({action:'prepare'},another.cookie,403)
+  await manual({action:'prepare'},teacher2.cookie,403,'https://foreign.test')
+  database.prepare('UPDATE lessons SET start=? WHERE id=?').run(new Date(Date.now()+60000).toISOString(),manualId)
+  await manual({action:'launch'},another.cookie,409)
+  await manual({action:'saveLink',url:'https://zoom.us/j/12345678901'},teacher2.cookie,400)
+  assert.equal((await manual({action:'prepare'},teacher2.cookie)).url,'https://zoom.us/start/videomeeting')
+  await manual({action:'saveLink',url:'https://evil.test/j/12345678901'},teacher2.cookie,400)
+  await manual({action:'saveLink',url:'https://zoom.us/s/12345678901?zak=private'},teacher2.cookie,400)
+  const joinUrl='https://zoom.us/j/12345678901?pwd=fixture'
+  await manual({action:'saveLink',url:joinUrl},teacher2.cookie)
+  assert.equal((await manual({action:'launch'},another.cookie)).url,joinUrl)
+  await manual({action:'launch'},student.cookie,403)
+  let publicLesson=(await request(null,another.cookie)).data.lessons.find(l=>l.id===manualId)
+  assert.equal(publicLesson.meeting_ready,true);assert.equal(publicLesson.meeting_link,undefined)
+  assert.notEqual(publicLesson.status,'attended','Clicking a link is not Zoom attendance')
+  const completion={action:'completeLesson',id:manualId,status:'attended',pages:80,note:'Documented progress',homework:'Student homework'}
+  await request(completion,teacher2.cookie,400)
+  database.prepare('UPDATE lessons SET start=?,joined=? WHERE id=?').run(new Date(Date.now()-40*60000).toISOString(),new Date(Date.now()-40*60000).toISOString(),manualId)
+  assert.equal((await request(null,teacher2.cookie)).data.lessons.find(l=>l.id===manualId).earned,0)
+  await request({...completion,homework:''},teacher2.cookie,400)
+  await request({...completion,note:''},teacher2.cookie,400)
+  await request(completion,another.cookie,403)
+  await request(completion,teacher.cookie,403)
+  // Crossing the scheduled end neither blocks rejoining nor credits pay.
+  await manual({action:'launch'},another.cookie)
+  const completions=await Promise.all([1,2].map(async()=>{
+    const r=await fetch(origin+'/api/system',{method:'POST',headers:{Cookie:teacher2.cookie,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(completion)});return r.status
+  }))
+  assert.ok(completions.includes(200));assert.ok(completions.every(s=>s===200||s===400))
+  assert.equal(database.prepare('SELECT COUNT(*) n FROM progress WHERE lesson_id=?').get(manualId).n,1)
+  const credited=(await request(null,teacher2.cookie)).data.lessons.find(l=>l.id===manualId)
+  assert.equal(credited.minutes,30);assert.equal(credited.earned,25)
+  publicLesson=(await request(null,another.cookie)).data.lessons.find(l=>l.id===manualId)
+  assert.equal(publicLesson.homework,'Student homework');assert.equal(publicLesson.completion_note,'Documented progress')
+  await manual({action:'launch'},another.cookie,400)
+  await request(completion,teacher2.cookie,400)
+  assert.equal((await request(null,teacher2.cookie)).data.users.find(u=>u.id===another.data.user.id).whatsapp,undefined)
+  assert.equal((await request(null,admin.cookie)).data.users.find(u=>u.id===another.data.user.id).whatsapp,'+201012345678')
   // Read-only payment visibility and live/test indicators on real database adapters.
   const paymentApi = async (cookie, suffix='') => { const response=await fetch(origin+'/api/payments'+suffix,{headers:{Cookie:cookie}}); assert.equal(response.status,200); return response.json() }
   assert.equal((await paymentApi('')).authenticated,false)
@@ -119,7 +168,7 @@ try {
   database.prepare("INSERT INTO payment_orders(id,student_id,request_key,plan_id,plan_name,amount,currency,country,mode,integration_ids,status,created,updated) VALUES(?,?,?,?,?,6400,'USD','US',?,'[123]','paid',?,?)").run('live-payment',student.data.user.id,'live-request','intl-half-2','Live fixture','live',start,start)
   assert.equal((await request(null,admin.cookie)).data.users.find(u=>u.id===student.data.user.id).payment_confirmed,1)
   assert.equal((await paymentApi(admin.cookie)).orders.length,2)
-  database.prepare('UPDATE lessons SET start=? WHERE id=?').run(new Date(Date.now() - 10 * 60000).toISOString(), liveId)
+  database.prepare('UPDATE lessons SET workflow_version=0,start=? WHERE id=?').run(new Date(Date.now() - 10 * 60000).toISOString(), liveId)
   await request({ action: 'join', id: liveId }, teacher.cookie)
   await request({ action: 'attendance', id: liveId, status: 'attended' }, teacher.cookie)
   await request({ action: 'progress', id: liveId, pages: 60, note: 'مراجعة الصفحات المتقنة' }, teacher.cookie)
@@ -161,7 +210,7 @@ try {
   await request({ action: 'createStudent', name: 'طالب مباشر', email: 'direct@test.example', password, subjects: ['التجويد'] }, limited.cookie)
   const direct = await request({ action: 'login', email: 'direct@test.example', password })
   assert.equal(direct.data.user.enrollment_status, 'active')
-  const pending = await request({ action: 'register', name: 'طالب ينتظر', email: 'pending@test.example', password, subjects: ['حفظ القرآن'] })
+  const pending = await request({ action: 'register', whatsapp: '+201012345678', name: 'طالب ينتظر', email: 'pending@test.example', password, subjects: ['حفظ القرآن'] })
   await request({ action: 'approveStudent', id: pending.data.user.id }, limited.cookie)
   assert.equal((await request(null, pending.cookie)).data.user.enrollment_status, 'active')
   await request({ action: 'updateTeacher', id: limited.data.user.id, permissions: ['staff_delete'] }, admin.cookie)
@@ -174,7 +223,7 @@ try {
   assert.equal(afterDelete.staff.some(t => t.id === newcomer.data.user.id), false)
   assert.equal(afterDelete.lessons.find(l => l.teacher_id === newcomer.data.user.id).status, 'cancelled')
   assert.throws(() => database.prepare('INSERT INTO lessons(teacher_id,student_id,subject,start,duration,rate,currency) VALUES(?,?,?,?,?,?,?)').run(newcomer.data.user.id, student.data.user.id, 'حفظ القرآن', new Date(Date.now()+40*86400000).toISOString(), 30, 0, 'EGP'), /lesson_accounts_unavailable/)
-  const waiting = await request({ action: 'register', name: 'طالب غير مؤكد', email: 'waiting@test.example', password, subjects: ['حفظ القرآن'] })
+  const waiting = await request({ action: 'register', whatsapp: '+201012345678', name: 'طالب غير مؤكد', email: 'waiting@test.example', password, subjects: ['حفظ القرآن'] })
   assert.throws(() => database.prepare('INSERT INTO lessons(teacher_id,student_id,subject,start,duration,rate,currency) VALUES(?,?,?,?,?,?,?)').run(teacher2.data.user.id, waiting.data.user.id, 'حفظ القرآن', new Date(Date.now()+40*86400000).toISOString(), 30, 0, 'EGP'), /lesson_accounts_unavailable/)
   const secondSession = await request({ action: 'login', email: 'teacher@test.example', password })
   await request({ action: 'changePassword', oldPassword: 'wrong', password: 'new-test-password-123' }, teacher.cookie, 400)
