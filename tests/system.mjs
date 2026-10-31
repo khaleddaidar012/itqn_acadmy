@@ -40,7 +40,8 @@ try {
   }
   await request(null, '', 401)
   const admin = await request({ action: 'login', email: 'admin@test.example', password })
-  const student = await request({ action: 'register', whatsapp: '+201012345678', name: 'طالب اختبار', email: 'student@test.example', password, subjects: ['حفظ القرآن'], role: 'admin' })
+  const student = await request({ action: 'register', whatsapp: '01012345678', whatsapp_country:'EG', name: 'طالب اختبار', email: 'student@test.example', password, subjects: ['حفظ القرآن'], role: 'admin' })
+  assert.equal((await request(null,admin.cookie)).data.users.find(u=>u.id===student.data.user.id).whatsapp,'+201012345678');
   assert.equal(student.data.user.enrollment_status, 'pending');
   assert.equal((await request(null, student.cookie)).data.lessons.length, 0);
   assert.equal(student.data.user.role, 'student', 'Public registration cannot choose an elevated role')

@@ -5,7 +5,7 @@ import { currentUser } from '@/lib/system/auth'
 import { accounting, type Lesson } from '@/lib/system/accounting'
 import { allowed, grants, PERMISSIONS, DEFAULT_MANAGER, type Permission } from '@/lib/system/permissions'
 import { presenceIntervals, presenceMinutes, type AttendanceEvent } from '@/lib/zoom/attendance'
-import { whatsappNumber } from '@/lib/system/phone'
+import { whatsappNumber, nationalWhatsapp } from '@/lib/system/phone'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         const name = str(body.name, 100); if (!name || password.length < 12) fail('أدخل الاسم وكلمة مرور لا تقل عن 12 حرفًا')
         const courses = selected(body.subjects)
         let whatsapp: string
-        try { whatsapp=whatsappNumber(body.whatsapp) } catch(error) { fail((error as Error).message) }
+        try { whatsapp=body.whatsapp_country ? nationalWhatsapp(body.whatsapp,body.whatsapp_country) : whatsappNumber(body.whatsapp) } catch(error) { fail((error as Error).message) }
         if (await db().prepare('SELECT id FROM users WHERE email=?').get(email)) fail('البريد مسجل بالفعل')
         id = Number((await db().prepare("INSERT INTO users(name,email,password,role,subjects,enrollment_status,whatsapp) VALUES(?,?,?,'student',?,'pending',?)").run(name, email, hashPassword(password), courses,whatsapp)).lastInsertRowid)
       } else {

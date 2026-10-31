@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import WhatsAppField from './WhatsAppField'
 
 export default function AuthForm({ register, locale }: { register?: boolean; locale: string }) {
   const router = useRouter()
@@ -11,7 +12,7 @@ export default function AuthForm({ register, locale }: { register?: boolean; loc
     event.preventDefault(); setError(''); setBusy(true)
     const data = new FormData(event.currentTarget)
     try {
-      const response = await fetch('/api/system', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: register ? 'register' : 'login', name: data.get('name'), email: data.get('email'), whatsapp:data.get('whatsapp'), password: data.get('password'), subjects: data.getAll('subjects') }) })
+      const response = await fetch('/api/system', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: register ? 'register' : 'login', name: data.get('name'), email: data.get('email'), whatsapp:data.get('whatsapp'), whatsapp_country:data.get('whatsapp_country'), password: data.get('password'), subjects: data.getAll('subjects') }) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error)
       router.replace(`/${locale}/dashboard`); router.refresh()
@@ -25,7 +26,7 @@ export default function AuthForm({ register, locale }: { register?: boolean; loc
       <p className="text-sm text-slate-500 mt-3 mb-8">{register ? 'التسجيل هنا للطلاب. تختار موادك، والإدارة ترتب جدولك مع المعلم المناسب.' : 'حساب واحد للدخول إلى مساحة الإدارة أو المعلم أو الطالب أو ولي الأمر.'}</p>
       <form method="post" onSubmit={submit} className="space-y-5">
         {register && <label className="block">اسم الطالب<input name="name" required maxLength={100} autoComplete="name" className="system-input" /></label>}
-        {register && <label className="block">رقم واتساب بكود الدولة<input name="whatsapp" type="tel" dir="ltr" required maxLength={40} autoComplete="tel" placeholder="+201012345678" className="system-input" /><span className="text-xs text-slate-500">للتواصل بشأن الاشتراك والحصص والواجبات</span></label>}
+        {register && <WhatsAppField locale={locale} />}
         <label className="block">البريد الإلكتروني<input name="email" type="email" required autoComplete="email" dir="ltr" className="system-input" /></label>
         <label className="block">كلمة المرور<input name="password" type="password" required minLength={register ? 12 : 1} maxLength={256} autoComplete={register ? 'new-password' : 'current-password'} className="system-input" />{register && <span className="text-xs text-slate-500">12 حرفًا على الأقل</span>}</label>
         {register && <fieldset><legend className="mb-3">المواد التي ترغب في دراستها</legend>{['حفظ القرآن', 'التجويد', 'اللغة العربية'].map(subject => <label key={subject} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 mb-2"><input type="checkbox" name="subjects" value={subject} />{subject}</label>)}</fieldset>}
